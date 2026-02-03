@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { getReqLogger } from 'common';
+import { getReqLogger } from '@common/core';
 @Injectable()
 export class RequestIdMiddleware implements NestMiddleware {
   use(req: any, res: any, next: () => void) {

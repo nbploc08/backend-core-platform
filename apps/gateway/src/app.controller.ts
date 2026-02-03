@@ -11,7 +11,6 @@ export class AppController {
   }
   @Get('health')
   health(@Req() req: any) {
-    console.log({ requestId: req.requestId, msg: 'health called' });
     return { ok: true };
   }
 }
