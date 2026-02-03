@@ -1,0 +1,17 @@
+{
+    "name": "core-platform",
+    "version": "1.0.0",
+    "main": "index.js",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev:gateway": "npm --workspace apps/gateway run start:dev"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": ""
+}
