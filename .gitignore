@@ -1,71 +1,57 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ---- dependencies ----
+node_modules/
+**/node_modules/
 
-# Dependencies
-/node_modules
-be/node_modules
-fe/node_modules
-/.pnp
-.pnp.js
+# ---- build outputs ----
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+coverage/
+**/coverage/
 
-# Compiled output
-/dist
-/build
-be/dist
-be/build
-fe/build
-fe/.next
-.next
+# ---- env / secrets ----
+.env
+.env.*
+!.env.example
 
-# Logs
-logs
+# ---- logs ----
+logs/
 *.log
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
+pnpm-debug.log*
 
-# Testing
-/coverage
-be/coverage
-fe/coverage
-/.nyc_output
-
-# OS
+# ---- OS / Editor ----
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
+.vscode/
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.idea/
+*.iml
 
-# Temp directories
-.temp
-.tmp
+# ---- TypeScript caches ----
+*.tsbuildinfo
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# ---- Prisma ----
+# (Nếu dùng sqlite local thì ignore file db; Postgres thì không cần)
+*.sqlite
+*.sqlite-journal
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json 
+# ---- Docker ----
+**/.dockerignore
+
+# ---- Temp ----
+tmp/
+temp/
+.cache/
