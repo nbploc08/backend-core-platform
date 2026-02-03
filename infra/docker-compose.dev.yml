@@ -1,0 +1,41 @@
+name: backend-core-platform
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: core_postgres
+    environment:
+      POSTGRES_USER: core
+      POSTGRES_PASSWORD: corepass
+      POSTGRES_DB: coredb
+    ports:
+      - '5432:5432'
+    volumes:
+      - core_postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U core -d coredb']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  nats:
+    image: nats:2.10
+    container_name: core_nats
+    command: ['-js', '-m', '8222']
+    ports:
+      - '4222:4222' # client
+      - '8222:8222' # monitoring
+
+  redis:
+    image: redis:7-alpine
+    container_name: core_redis
+    ports:
+      - '6379:6379'
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - core_redis_data:/data
+
+volumes:
+  core_postgres_data:
+  core_redis_data:
