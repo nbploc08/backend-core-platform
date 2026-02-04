@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: corepass
       POSTGRES_DB: coredb
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - core_postgres_data:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
