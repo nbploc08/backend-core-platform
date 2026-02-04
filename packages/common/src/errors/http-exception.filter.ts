@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { logger } from '../logging/logger';
-import { ErrorCode } from './error-codes';
+import { ErrorCode, ErrorCodes } from './error-codes';
 import { ServiceError } from './service-error';
 
 type ApiErrorBody = {
@@ -19,36 +19,70 @@ type ApiErrorBody = {
   traceId?: string;
 };
 
-function safeString(v: unknown): string {
-  if (typeof v === 'string') return v;
+type LogEntry = {
+  level: 'warn' | 'error';
+  bindings: Record<string, unknown>;
+  msg: string;
+};
+
+/** 404 từ browser/DevTools — không log để tránh rác */
+const SKIP_LOG_404_PATHS = new Set([
+  '/.well-known/appspecific/com.chrome.devtools.json',
+  '/favicon.ico',
+]);
+
+function shouldSkipLog404(path: string | undefined): boolean {
+  return path != null && SKIP_LOG_404_PATHS.has(path);
+}
+
+function safeLog(entry: LogEntry): void {
   try {
-    return JSON.stringify(v);
+    if (entry.level === 'error') {
+      logger.error(entry.bindings, entry.msg);
+    } else {
+      logger.warn(entry.bindings, entry.msg);
+    }
   } catch {
-    return String(v);
+    const out = entry.level === 'error' ? console.error : console.warn;
+    out(`[${entry.level}]`, entry.msg, entry.bindings);
+  }
+}
+
+function defaultCodeForStatus(status: number): ErrorCode {
+  switch (status) {
+    case 401:
+      return ErrorCodes.UNAUTHORIZED;
+    case 403:
+      return ErrorCodes.FORBIDDEN;
+    case 404:
+      return ErrorCodes.NOT_FOUND;
+    default:
+      return ErrorCodes.INTERNAL;
   }
 }
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const req: any = ctx.getRequest();
-    const res: any = ctx.getResponse();
+    const req = ctx.getRequest<{ requestId?: string; method?: string; originalUrl?: string; url?: string }>();
+    const res = ctx.getResponse();
 
-    const traceId: string | undefined = req?.requestId;
+    const traceId = req?.requestId;
     const method = req?.method;
-    const path = req?.originalUrl || req?.url;
+    const path = req?.originalUrl ?? req?.url;
+    const baseBindings = { traceId, method, path };
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let body: ApiErrorBody = {
-      error: { code: ErrorCode.INTERNAL, message: 'Internal server error' },
+      error: { code: ErrorCodes.INTERNAL, message: 'Internal server error' },
       traceId,
     };
+    let logEntry: LogEntry | null = null;
 
-    // 1) Business error (chuẩn core)
+    // 1) Business error (ServiceError)
     if (exception instanceof ServiceError) {
       statusCode = exception.statusCode;
-
       body = {
         error: {
           code: exception.code,
@@ -57,89 +91,82 @@ export class HttpExceptionFilter implements ExceptionFilter {
         },
         traceId,
       };
-
-      // log warn/error tuỳ status
-      const logFn = statusCode >= 500 ? logger.error : logger.warn;
-      logFn(
-        { traceId, method, path, statusCode, code: exception.code, details: exception.details },
-        exception.message,
-      );
-
-      return res.status(statusCode).json(body);
+      logEntry = {
+        level: statusCode >= 500 ? 'error' : 'warn',
+        bindings: { ...baseBindings, statusCode, code: exception.code, details: exception.details },
+        msg: exception.message,
+      };
     }
-
-    // 2) Validation error (thường do class-validator / pipes)
-    if (exception instanceof BadRequestException) {
+    // 2) Validation (BadRequestException)
+    else if (exception instanceof BadRequestException) {
       statusCode = exception.getStatus();
-      const resp: any = exception.getResponse();
-
-      // resp.message thường là array các lỗi validation
+      const resp = exception.getResponse() as { message?: unknown };
       const details = resp?.message;
-
       body = {
         error: {
-          code: ErrorCode.VALIDATION_ERROR,
+          code: ErrorCodes.VALIDATION_ERROR,
           message: 'Validation failed',
           details,
         },
         traceId,
       };
-      logger.warn({ traceId, method, path, statusCode, details }, 'validation_failed');
-      return res.status(statusCode).json(body);
+      logEntry = {
+        level: 'warn',
+        bindings: { ...baseBindings, statusCode, details },
+        msg: 'validation_failed',
+      };
     }
-
-    // 3) Nest HttpException (401/403/404/etc)
-    if (exception instanceof HttpException) {
+    // 3) Nest HttpException (401/403/404/...)
+    else if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
-      const resp: any = exception.getResponse();
-
-      // Cho phép service tự nhét { code, message, details } vào HttpException response
-      const code =
-        resp?.code ||
-        (statusCode === 401
-          ? ErrorCode.UNAUTHORIZED
-          : statusCode === 403
-            ? ErrorCode.FORBIDDEN
-            : statusCode === 404
-              ? ErrorCode.NOT_FOUND
-              : ErrorCode.INTERNAL);
-
-      const message = resp?.message
-        ? Array.isArray(resp.message)
-          ? resp.message.join(', ')
-          : String(resp.message)
-        : exception.message || 'Request failed';
+      const resp = exception.getResponse() as {
+        code?: ErrorCode;
+        message?: string | string[];
+        details?: unknown;
+      };
+      const code = resp?.code ?? defaultCodeForStatus(statusCode);
+      const message =
+        resp?.message != null
+          ? Array.isArray(resp.message)
+            ? resp.message.join(', ')
+            : String(resp.message)
+          : exception.message ?? 'Request failed';
 
       body = {
         error: {
           code,
-          // 4xx có thể expose message, 5xx không nên
           message: statusCode >= 500 ? 'Internal server error' : message,
           details: resp?.details,
         },
         traceId,
       };
-
-      logger.warn({ traceId, method, path, statusCode, code, details: resp?.details }, message);
-      return res.status(statusCode).json(body);
+      if (!(statusCode === 404 && shouldSkipLog404(path))) {
+        logEntry = {
+          level: 'warn',
+          bindings: { ...baseBindings, statusCode, code, details: resp?.details },
+          msg: message,
+        };
+      }
+    }
+    // 4) Unknown error — không leak message/stack vào log
+    else {
+      logEntry = {
+        level: 'error',
+        bindings: { ...baseBindings, statusCode },
+        msg: 'unhandled_exception',
+      };
     }
 
-    // 4) Unknown error (code bug, crash…): không leak message/stack ra client
-    const err = exception as any;
-    logger.error(
-      {
-        traceId,
-        method,
-        path,
-        statusCode,
-        // log nội bộ thôi (terminal), client không thấy
-        errMessage: err?.message,
-        errName: err?.name,
-        errStack: err?.stack,
-      },
-      'unhandled_exception',
-    );
+    if (logEntry) {
+      try {
+        safeLog(logEntry);
+      } catch {
+        // bỏ qua nếu log lỗi, vẫn trả response
+      }
+    }
 
-    return res.status(statusCode).json(body);
+    if (!res.headersSent) {
+      res.status(statusCode).json(body);
+    }
   }
 }

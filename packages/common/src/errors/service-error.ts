@@ -1,4 +1,4 @@
-import { ErrorCode } from './error-codes';
+import { ErrorCode, ErrorCodes } from './error-codes';
 
 export class ServiceError extends Error {
   public readonly code: ErrorCode;
@@ -21,7 +21,7 @@ export class ServiceError extends Error {
   }) {
     super(params.message);
 
-    this.code = params.code ?? ErrorCode.INTERNAL;
+    this.code = params.code ?? ErrorCodes.INTERNAL;
     this.statusCode = params.statusCode ?? 500;
     this.details = params.details;
     this.exposeMessage = params.exposeMessage ?? true;

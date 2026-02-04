@@ -1,5 +1,6 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus, Req } from '@nestjs/common';
 import { AppService } from './app.service';
+import { ErrorCodes, ServiceError } from '@common/core';
 
 @Controller()
 export class AppController {
@@ -13,4 +14,14 @@ export class AppController {
   health(@Req() req: any) {
     return { ok: true };
   }
+
+  @Get('debug/service-error')
+  debugServiceError() {
+    throw new ServiceError({
+      code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+      statusCode: 999,
+      message: 'Invalid email or password',
+    });
+  }
+
 }

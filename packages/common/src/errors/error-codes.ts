@@ -1,8 +1,5 @@
-export const ErrorCode = {
-  // Generic
+export const ErrorCodes = {
   INTERNAL: 'INTERNAL',
-
-  // Common HTTP-ish
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   NOT_FOUND: 'NOT_FOUND',
   UNAUTHORIZED: 'UNAUTHORIZED',
@@ -11,15 +8,13 @@ export const ErrorCode = {
   CONFLICT: 'CONFLICT',
   BAD_REQUEST: 'BAD_REQUEST',
 
-  // Auth
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
   AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
   AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
   AUTH_REFRESH_TOKEN_INVALID: 'AUTH_REFRESH_TOKEN_INVALID',
   AUTH_EMAIL_ALREADY_EXISTS: 'AUTH_EMAIL_ALREADY_EXISTS',
 
-  // Notifications
   NOTI_NOT_FOUND: 'NOTI_NOT_FOUND',
 } as const;
 
-export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

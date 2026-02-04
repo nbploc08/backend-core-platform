@@ -5,9 +5,9 @@ import { HttpLoggerInterceptor } from '@common/core';
 import { HttpExceptionFilter } from '@common/core';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
-  app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
