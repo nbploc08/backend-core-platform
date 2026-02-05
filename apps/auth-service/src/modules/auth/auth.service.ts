@@ -4,6 +4,7 @@ import { NatsService } from '../nats/nats.service';
 import { RegisterDto } from './dto/register.dto';
 import { logger } from '@common/core';
 import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
+import { RegisterResponseDto } from './dto/registerRes.dto';
 
 @Injectable()
 export class AuthService {
@@ -20,7 +21,7 @@ export class AuthService {
    * - Audit logs the action
    * - Returns user data without passwordHash
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<RegisterResponseDto> {
     // 1. Create user in database
     const user = await this.usersService.create(dto);
 
@@ -48,6 +49,10 @@ export class AuthService {
       'User registered successfully',
     );
 
-    return user;
+    return {
+      userId: user.userId,
+      email: user.email,
+      createdAt: user.createdAt,
+    } as RegisterResponseDto;
   }
 }
