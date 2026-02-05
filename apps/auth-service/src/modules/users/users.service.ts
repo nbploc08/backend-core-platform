@@ -2,6 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hashPassword, verifyPassword } from '@common/core';
+import { CreateUserResponseDto } from './dto/resCreateUser.dto';
 
 @Injectable()
 export class UsersService {
@@ -10,7 +11,7 @@ export class UsersService {
   /**
    * Create a new user with hashed password
    */
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto): Promise<CreateUserResponseDto> {
     // Check if email already exists
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase().trim() },
@@ -22,7 +23,7 @@ export class UsersService {
 
     // Hash password
     const passwordHash = await hashPassword(dto.password);
-    const codeHash = await hashPassword(dto.email);
+    const codeHash = await hashPassword(Math.random().toString(36).substring(2, 15));
     // Create user
     const user = await this.prisma.user.create({
       data: {
@@ -31,6 +32,11 @@ export class UsersService {
         name: dto.name,
         phone: dto.phone,
         isActive: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
       },
     });
 
@@ -42,8 +48,12 @@ export class UsersService {
       },
     });
     // Return user without password hash
-    const { passwordHash: _, ...result } = user;
-    return { ...result, code: emailOtp.codeHash };
+    return {
+      userId: user.id,
+      email: user.email,
+      code: emailOtp.codeHash,
+      createdAt: user.createdAt,
+    } as CreateUserResponseDto;
   }
 
   /**

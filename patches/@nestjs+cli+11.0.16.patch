@@ -1,0 +1,18 @@
+diff --git a/node_modules/@nestjs/cli/lib/utils/tree-kill.js b/node_modules/@nestjs/cli/lib/utils/tree-kill.js
+index 47f78a0..70f009c 100644
+--- a/node_modules/@nestjs/cli/lib/utils/tree-kill.js
++++ b/node_modules/@nestjs/cli/lib/utils/tree-kill.js
+@@ -4,7 +4,12 @@ exports.treeKillSync = treeKillSync;
+ const child_process_1 = require("child_process");
+ function treeKillSync(pid, signal) {
+     if (process.platform === 'win32') {
+-        (0, child_process_1.execSync)('taskkill /pid ' + pid + ' /T /F');
++        try {
++            (0, child_process_1.execSync)('taskkill /pid ' + pid + ' /T /F', { stdio: 'ignore' });
++        } catch (error) {
++            // Ignore error if process doesn't exist (already terminated)
++            // This is a common case on Windows when watch mode restarts
++        }
+         return;
+     }
+     const childs = getAllChilds(pid);

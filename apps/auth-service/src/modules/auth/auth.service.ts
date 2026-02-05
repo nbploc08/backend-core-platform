@@ -26,7 +26,7 @@ export class AuthService {
 
     // 2. Publish USER_REGISTERED event to NATS JetStream
     const eventPayload = {
-      userId: user.id,
+      userId: user.userId,
       email: user.email,
       code: user.code,
       createdAt: user.createdAt.toISOString(),
@@ -41,9 +41,9 @@ export class AuthService {
     logger.info(
       {
         action: 'user.registered',
-        userId: user.id,
-        code: user.code,
+        userId: user.userId,
         email: user.email,
+        createdAt: user.createdAt.toISOString(),
       },
       'User registered successfully',
     );

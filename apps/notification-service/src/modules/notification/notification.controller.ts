@@ -14,7 +14,6 @@ export class NotificationController {
   // Lắng nghe event USER_REGISTERED từ auth-service qua NATS subject 'user.registered'
   @MessagePattern(USER_REGISTERED)
   create(@Payload() userRegisteredEvent: UserRegisteredEventDto) {
-    logger.info({ userRegisteredEvent }, 'User registered event received');
     return this.notificationService.create(userRegisteredEvent);
   }
 
