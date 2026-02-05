@@ -11,6 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:gateway": "npm --workspace apps/gateway run start:dev",
     "dev:auth-service": "npm --workspace apps/auth-service run start:dev",
+    "dev:notification-service": "npm --workspace apps/notification-service run start:dev",
     "format": "prettier . --write",
     "lint": "eslint ."
   },
