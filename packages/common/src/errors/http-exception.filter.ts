@@ -50,12 +50,18 @@ function safeLog(entry: LogEntry): void {
 
 function defaultCodeForStatus(status: number): ErrorCode {
   switch (status) {
+    case 400:
+      return ErrorCodes.VALIDATION_ERROR;
     case 401:
       return ErrorCodes.UNAUTHORIZED;
     case 403:
       return ErrorCodes.FORBIDDEN;
     case 404:
       return ErrorCodes.NOT_FOUND;
+    case 409:
+      return ErrorCodes.CONFLICT;
+    case 429:
+      return ErrorCodes.TOO_MANY_REQUESTS;
     default:
       return ErrorCodes.INTERNAL;
   }
@@ -116,10 +122,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         msg: 'validation_failed',
       };
     }
-    // 3) Nest HttpException (401/403/404/...)
-    else if (exception instanceof HttpException) {
-      statusCode = exception.getStatus();
-      const resp = exception.getResponse() as {
+    // 3) Nest HttpException (401/403/404/409/...) - use duck typing to handle multiple @nestjs/common versions
+    else if (
+      exception != null &&
+      typeof exception === 'object' &&
+      'getStatus' in exception &&
+      typeof (exception as HttpException).getStatus === 'function'
+    ) {
+      const httpEx = exception as HttpException;
+      statusCode = httpEx.getStatus();
+      const resp = httpEx.getResponse() as {
         code?: ErrorCode;
         message?: string | string[];
         details?: unknown;
@@ -130,7 +142,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? Array.isArray(resp.message)
             ? resp.message.join(', ')
             : String(resp.message)
-          : exception.message ?? 'Request failed';
+          : httpEx.message ?? 'Request failed';
 
       body = {
         error: {
