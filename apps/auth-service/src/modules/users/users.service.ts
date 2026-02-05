@@ -22,7 +22,7 @@ export class UsersService {
 
     // Hash password
     const passwordHash = await hashPassword(dto.password);
-
+    const codeHash = await hashPassword(dto.email);
     // Create user
     const user = await this.prisma.user.create({
       data: {
@@ -30,12 +30,20 @@ export class UsersService {
         passwordHash,
         name: dto.name,
         phone: dto.phone,
+        isActive: false,
       },
     });
 
+    const emailOtp = await this.prisma.emailOtp.create({
+      data: {
+        userId: user.id,
+        codeHash: codeHash,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
     // Return user without password hash
     const { passwordHash: _, ...result } = user;
-    return result;
+    return { ...result, code: emailOtp.codeHash };
   }
 
   /**
@@ -59,10 +67,7 @@ export class UsersService {
   /**
    * Validate user password
    */
-  async validatePassword(
-    email: string,
-    password: string,
-  ): Promise<boolean> {
+  async validatePassword(email: string, password: string): Promise<boolean> {
     const user = await this.findByEmail(email);
     if (!user) return false;
 

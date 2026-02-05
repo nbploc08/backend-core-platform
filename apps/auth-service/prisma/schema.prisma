@@ -16,10 +16,45 @@ model User {
   phone        String?
   age          Int?
   address      String?
-
+  refreshTokens RefreshToken[]
+  emailOtps    EmailOtp[]
+  
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@map("users")
+}
+
+
+model EmailOtp {
+  id          String   @id @default(uuid())
+  userId      String
+  codeHash    String
+  expiresAt   DateTime
+  isUsed     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("emailOtps")
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime 
+  
+  deviceId    String
+  deviceName  String?
+  ipAddress   String?
+  userAgent   String?
+
+  user User @relation(fields: [userId], references: [id],onDelete: Cascade )
+    @@index([userId])
+    @@map("refreshTokens")
 }

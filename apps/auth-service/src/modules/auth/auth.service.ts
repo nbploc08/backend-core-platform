@@ -28,9 +28,10 @@ export class AuthService {
     const eventPayload = {
       userId: user.id,
       email: user.email,
+      code: user.code,
       createdAt: user.createdAt.toISOString(),
     };
-    
+
     // Validate payload against contract
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
 
@@ -41,6 +42,7 @@ export class AuthService {
       {
         action: 'user.registered',
         userId: user.id,
+        code: user.code,
         email: user.email,
       },
       'User registered successfully',
