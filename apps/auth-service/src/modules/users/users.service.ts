@@ -1,4 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hashPassword, verifyPassword } from '@common/core';
@@ -63,6 +68,33 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
     });
+  }
+
+  async veryfiRegister(email: string, code: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { email: email.toLowerCase().trim() },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.isActive) {
+      throw new BadRequestException('User already verified');
+    }
+    const verifyOtp = await this.prisma.emailOtp.findFirst({
+      where: { userId: user.id, codeHash: code, expiresAt: { gt: new Date() } },
+    });
+    if (!verifyOtp) {
+      throw new BadRequestException('Invalid code');
+    }
+    await this.prisma.emailOtp.update({
+      where: { id: verifyOtp.id },
+      data: { isUsed: true },
+    });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isActive: true },
+    });
+    return true;
   }
 
   /**

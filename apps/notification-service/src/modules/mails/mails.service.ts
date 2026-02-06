@@ -25,13 +25,14 @@ export class MailsService {
   }
 
   async sendVerifyCode(email: string, code: string) {
+    const verifyUrl = `http://localhost:3001/auth/register/verify?email=${email}&code=${encodeURIComponent(code)}`;
     return this.sendMail(
       email,
       'Your verification code',
       `
         <h2>Verify your account</h2>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
+        <p>Your verification link:</p>
+        <h1><a href="${verifyUrl}">http://localhost:3001/auth/register/verify?email=${email}&code=${code}</a></h1>
         <p>This code will expire in 5 minutes.</p>
       `,
     );
