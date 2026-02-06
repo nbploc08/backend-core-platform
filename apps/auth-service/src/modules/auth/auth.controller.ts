@@ -6,14 +6,6 @@ import { RegisterDto } from './dto/register.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * POST /auth/register
-   * Register a new user account
-   * 
-   * Success: 201 Created + user data (no passwordHash)
-   * Email exists: 409 Conflict
-   * Validation fail: 400 Bad Request
-   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto) {

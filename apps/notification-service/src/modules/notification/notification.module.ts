@@ -7,5 +7,6 @@ import { MailsModule } from '../mails/mails.module';
   controllers: [NotificationController],
   providers: [NotificationService],
   imports: [MailsModule],
+  exports: [NotificationService],
 })
 export class NotificationModule {}

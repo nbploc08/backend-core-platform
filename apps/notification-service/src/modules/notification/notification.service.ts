@@ -1,14 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { UserRegisteredEventDto } from './dto/userRegisteredEvent.dto';
 import { MailsService } from '../mails/mails.service';
+import { ErrorCodes, logger, ServiceError } from '@common/core';
 
 @Injectable()
 export class NotificationService {
   constructor(private readonly mailsService: MailsService) {}
-  create(userRegisteredEvent: UserRegisteredEventDto) {
-    return this.mailsService.sendVerifyCode(userRegisteredEvent.email, userRegisteredEvent.code);
+
+  async create(userRegisteredEvent: UserRegisteredEventDto): Promise<boolean> {
+    await this.mailsService.sendVerifyCode(userRegisteredEvent.email, userRegisteredEvent.code);
+    logger.info(`Send verify code to ${userRegisteredEvent.email}`);
+    return true;
   }
 
   findAll() {

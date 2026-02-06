@@ -13,19 +13,12 @@ export class AuthService {
     private readonly natsService: NatsService,
   ) {}
 
-  /**
-   * Register a new user
-   * - Validates input via DTO
-   * - Creates user with hashed password
-   * - Publishes USER_REGISTERED event
-   * - Audit logs the action
-   * - Returns user data without passwordHash
-   */
+
   async register(dto: RegisterDto): Promise<RegisterResponseDto> {
-    // 1. Create user in database
+
     const user = await this.usersService.create(dto);
 
-    // 2. Publish USER_REGISTERED event to NATS JetStream
+
     const eventPayload = {
       userId: user.userId,
       email: user.email,
@@ -33,12 +26,11 @@ export class AuthService {
       createdAt: user.createdAt.toISOString(),
     };
 
-    // Validate payload against contract
+
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
 
     await this.natsService.publish(USER_REGISTERED, validatedPayload);
 
-    // 3. Audit log
     logger.info(
       {
         action: 'user.registered',
