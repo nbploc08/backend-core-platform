@@ -87,4 +87,21 @@ export class AuthController {
   info(@User() user: UserInterface) {
     return this.authService.info(user);
   }
+
+  @Post('logout-device')
+  @HttpCode(HttpStatus.OK)
+  async logoutDevice(
+    @Cookies('deviceId') deviceId: string,
+    @Res({ passthrough: true }) response: Response,
+    @User() user: UserInterface,
+    @Cookies('refreshToken') refreshToken: string,
+  ) {
+    return this.authService.logoutDevice(deviceId, response, user, refreshToken);
+  }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(@Res({ passthrough: true }) response: Response, @User() user: UserInterface) {
+    return this.authService.logoutAll(response, user);
+  }
 }

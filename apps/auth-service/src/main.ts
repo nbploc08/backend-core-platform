@@ -5,7 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpLoggerInterceptor } from '@common/core';
 import { HttpExceptionFilter } from '@common/core';
-import { JwtAuthGuard } from './modules/auth/strategy/jwt-auth.guard';
 import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

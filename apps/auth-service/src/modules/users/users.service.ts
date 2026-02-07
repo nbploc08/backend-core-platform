@@ -187,7 +187,27 @@ export class UsersService {
       },
     })) as InfoUserDto;
   }
+  async logoutDevice(deviceId: string, userId: string, refreshToken: string) {
+    return await this.prisma.refreshToken.updateMany({
+      where: {
+        deviceId: deviceId,
+        userId: userId,
+        tokenHash: refreshToken,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+  }
 
+  async logoutAllDevices(userId: string) {
+    return await this.prisma.refreshToken.updateMany({
+      where: {
+        revokedAt: null,
+        userId: userId,
+      },
+      data: { revokedAt: new Date() },
+    });
+  }
   /**
    * Find user by ID
    */

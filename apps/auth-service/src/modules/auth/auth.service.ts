@@ -235,4 +235,21 @@ export class AuthService {
       });
     }
   }
+  async logoutDevice(
+    deviceId: string,
+    response: any,
+    user: UserInterface,
+    refreshToken: string,
+  ): Promise<string> {
+    await this.usersService.logoutDevice(deviceId, user.id, refreshToken);
+    response.clearCookie('refreshToken');
+    response.clearCookie('deviceId');
+    return 'logout success';
+  }
+  async logoutAll(response: any, user: any): Promise<string> {
+    await this.usersService.logoutAllDevices(user.id);
+    response.clearCookie('refreshToken');
+    response.clearCookie('deviceId');
+    return 'logout success';
+  }
 }
