@@ -7,3 +7,4 @@ export * from './errors/service-error';
 
 export * from './security/password.util';
 export * from './security/crypto.util';
+export * from './decorators/public.decorator';

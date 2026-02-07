@@ -6,16 +6,42 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { encrypt, getEncryptKey, hashPassword, verifyPassword } from '@common/core';
+import {
+  encrypt,
+  ErrorCodes,
+  getEncryptKey,
+  hashPassword,
+  ServiceError,
+  verifyPassword,
+} from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+  async findOneByEmail(email: string) {
+    return await this.prisma.user.findFirst({
+      where: { email },
+    });
+  }
 
-  /**
-   * Create a new user with hashed password
-   */
+  async validateUser(email: string, pass: string): Promise<any> {
+    const normalizedEmail = email?.toLowerCase().trim();
+    const user = await this.findOneByEmail(normalizedEmail);
+    const validPassword = user ? await verifyPassword(user.passwordHash, pass) : false;
+    if (user && validPassword) {
+      const { passwordHash, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+  async checkActive(email: string) {
+    const result = await this.prisma.user.findFirst({
+      where: { email },
+      select: { isActive: true },
+    });
+    return result?.isActive ?? false;
+  }
   async create(dto: CreateUserDto): Promise<CreateUserResponseDto> {
     // Check if email already exists
     const existing = await this.prisma.user.findUnique({
@@ -63,12 +89,6 @@ export class UsersService {
     } as CreateUserResponseDto;
   }
 
-  async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
-    });
-  }
-
   async veryfiRegister(email: string, code: string): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: { email: email.toLowerCase().trim() },
@@ -95,6 +115,37 @@ export class UsersService {
     });
     return true;
   }
+  async saveRefreshToken(
+    id: string,
+    refreshTokenNew: string,
+    dataDevice: any,
+    deviceId: string,
+    refreshTokenOld?: string,
+  ) {
+    const ttlSeconds = Number(process.env.JWT_REFRESH_EXPIRES_IN);
+    const refreshTtlSeconds =
+      Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds : 60 * 60 * 24 * 30; // default 30 days
+
+    const expiresAt = new Date(Date.now() + refreshTtlSeconds * 1000);
+
+    return await this.prisma.refreshToken.upsert({
+      where: {
+        userId: id,
+        tokenHash: refreshTokenOld ?? '',
+        deviceId: deviceId,
+      },
+      update: { tokenHash: refreshTokenNew },
+      create: {
+        userId: id,
+        tokenHash: refreshTokenNew,
+        deviceId: deviceId,
+        deviceName: dataDevice.deviceName,
+        ipAddress: dataDevice.ip,
+        userAgent: dataDevice.userAgent,
+        expiresAt,
+      },
+    });
+  }
 
   /**
    * Find user by ID
@@ -109,7 +160,7 @@ export class UsersService {
    * Validate user password
    */
   async validatePassword(email: string, password: string): Promise<boolean> {
-    const user = await this.findByEmail(email);
+    const user = await this.findOneByEmail(email);
     if (!user) return false;
 
     return verifyPassword(user.passwordHash, password);

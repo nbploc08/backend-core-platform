@@ -8,11 +8,15 @@ import {
   HttpStatus,
   Res,
   Header,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
+import { LocalAuthGuard } from './passport/local-auth.guard';
+import { Public } from '@common/core';
 
 function escapeHtmlAttr(s: string): string {
   return s
@@ -39,25 +43,23 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
- 
-
   @Post('register/verify')
   @HttpCode(HttpStatus.OK)
   async verify(@Body() verifyDto: VerifyRegisterDto) {
     return this.authService.verify(verifyDto);
   }
 
-
   @Get('register/verify/confirm')
   @Header('Content-Type', 'text/html; charset=utf-8')
-  confirmPage(
-    @Query() verifyDto: VerifyRegisterDto,
-    @Res() res: Response,
-  ): void {
-    const html = verifyConfirmHtml(
-      verifyDto.email ?? '',
-      verifyDto.code ?? '',
-    );
+  confirmPage(@Query() verifyDto: VerifyRegisterDto, @Res() res: Response): void {
+    const html = verifyConfirmHtml(verifyDto.email ?? '', verifyDto.code ?? '');
     res.send(html);
+  }
+  @UseGuards(LocalAuthGuard)
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+    return this.authService.login(req.user, res, req);
   }
 }
