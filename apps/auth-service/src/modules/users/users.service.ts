@@ -15,6 +15,9 @@ import {
   verifyPassword,
 } from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
+import { UserAuthResponseDto } from './dto/userAuth.dto';
+import { UserInterface } from 'src/entities/user.entities';
+import { InfoUserDto } from './dto/infoUser.dto';
 
 @Injectable()
 export class UsersService {
@@ -42,6 +45,18 @@ export class UsersService {
     });
     return result?.isActive ?? false;
   }
+  async createOrUpdateEmailOtp(userId: string, codeHash: string): Promise<any> {
+    return await this.prisma.emailOtp.upsert({
+      where: { userId: userId },
+      update: { codeHash: codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+      create: {
+        userId: userId,
+        codeHash: codeHash,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+  }
+
   async create(dto: CreateUserDto): Promise<CreateUserResponseDto> {
     // Check if email already exists
     const existing = await this.prisma.user.findUnique({
@@ -73,13 +88,7 @@ export class UsersService {
       },
     });
 
-    const emailOtp = await this.prisma.emailOtp.create({
-      data: {
-        userId: user.id,
-        codeHash: codeHash,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-      },
-    });
+    await this.createOrUpdateEmailOtp(user.id, codeHash);
 
     return {
       userId: user.id,
@@ -91,13 +100,10 @@ export class UsersService {
 
   async veryfiRegister(email: string, code: string): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: email.toLowerCase().trim(), isActive: false },
     });
     if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    if (user.isActive) {
-      throw new BadRequestException('User already verified');
+      throw new NotFoundException('User not found Or already verified');
     }
     const verifyOtp = await this.prisma.emailOtp.findFirst({
       where: { userId: user.id, codeHash: code, expiresAt: { gt: new Date() } },
@@ -145,6 +151,41 @@ export class UsersService {
         expiresAt,
       },
     });
+  }
+  async findByRefreshToken(
+    id: string,
+    refreshToken: string,
+    deviceId: any,
+  ): Promise<UserAuthResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: id,
+        refreshTokens: {
+          some: {
+            tokenHash: refreshToken,
+            deviceId: deviceId,
+            expiresAt: {
+              gt: new Date(),
+            },
+            revokedAt: null,
+          },
+        },
+      },
+    });
+    return user as UserAuthResponseDto;
+  }
+  async info(user: UserInterface): Promise<InfoUserDto> {
+    return (await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+      },
+    })) as InfoUserDto;
   }
 
   /**

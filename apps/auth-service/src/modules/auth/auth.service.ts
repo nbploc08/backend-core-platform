@@ -2,7 +2,14 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { NatsService } from '../nats/nats.service';
 import { RegisterDto } from './dto/register.dto';
-import { ErrorCodes, logger, ServiceError } from '@common/core';
+import {
+  encrypt,
+  ErrorCodes,
+  getEncryptKey,
+  hashPassword,
+  logger,
+  ServiceError,
+} from '@common/core';
 import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
 import { RegisterResponseDto } from './dto/registerRes.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
@@ -11,6 +18,7 @@ import { UAParser } from 'ua-parser-js';
 import { randomUUID } from 'crypto';
 import { UserInterface } from '../../entities/user.entities';
 import { JwtService } from '@nestjs/jwt';
+import { InfoUserDto } from '../users/dto/infoUser.dto';
 
 @Injectable()
 export class AuthService {
@@ -140,6 +148,90 @@ export class AuthService {
         statusCode: 401,
 
         message: error.message ?? 'Invalid email or password',
+      });
+    }
+  }
+  async refresh(
+    refreshTokenOld: string,
+    deviceId: string,
+    response: any,
+    req: any,
+  ): Promise<loginResponseDto> {
+    try {
+      const decoded = this.jwtService.verify(refreshTokenOld, {
+        secret: process.env.JWT_SECRET,
+      });
+      const dataDevice = await this.getDeviceData(req);
+      const user = await this.usersService.findByRefreshToken(
+        decoded.sub,
+        refreshTokenOld,
+        deviceId,
+      );
+      if (!user) {
+        response.clearCookie('refreshToken');
+        response.clearCookie('deviceId');
+        throw new ServiceError({
+          code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
+          statusCode: 401,
+          message: 'Invalid refresh token',
+        });
+      }
+
+      //
+      return await this.issueTokens(user, response, dataDevice, deviceId, refreshTokenOld);
+    } catch (error) {
+      response.clearCookie('refreshToken');
+      response.clearCookie('deviceId');
+      throw new ServiceError({
+        code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
+        statusCode: 401,
+        message: error.message ?? 'Invalid refresh token',
+      });
+    }
+  }
+  async info(user: UserInterface): Promise<InfoUserDto> {
+    return (await this.usersService.info(user)) as InfoUserDto;
+  }
+  async resendCode(email: string): Promise<{ message: string }> {
+    try {
+      const user = await this.usersService.findOneByEmail(email);
+
+      if (!user || user.isActive) {
+        throw new ServiceError({
+          code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+          statusCode: 401,
+          message: 'Not found user',
+        });
+      }
+      const codeHash = await hashPassword(Math.random().toString(36).substring(2, 15));
+      const code = encrypt(codeHash, getEncryptKey());
+      await this.usersService.createOrUpdateEmailOtp(user.id, codeHash);
+      const eventPayload = {
+        userId: user.id,
+        email: user.email,
+        code: code,
+        createdAt: user.createdAt.toISOString(),
+      };
+
+      const validatedPayload = UserRegisteredSchema.parse(eventPayload);
+
+      await this.natsService.publish(USER_REGISTERED, validatedPayload);
+
+      logger.info(
+        {
+          action: 'user.registered',
+          userId: user.id,
+          email: user.email,
+          createdAt: user.createdAt.toISOString(),
+        },
+        'User registered successfully',
+      );
+      return { message: 'Verification code resent' };
+    } catch (error) {
+      throw new ServiceError({
+        code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+        statusCode: 401,
+        message: error.message ?? 'Not found user',
       });
     }
   }

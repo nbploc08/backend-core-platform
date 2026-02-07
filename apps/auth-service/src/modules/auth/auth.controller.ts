@@ -16,7 +16,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
-import { Public } from '@common/core';
+import { Cookies, Public, User } from '@common/core';
+import type { UserInterface } from '../../entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
   return s
@@ -55,11 +56,35 @@ export class AuthController {
     const html = verifyConfirmHtml(verifyDto.email ?? '', verifyDto.code ?? '');
     res.send(html);
   }
+  @Public()
+  @Post('resend-code')
+  @HttpCode(HttpStatus.OK)
+  async resend(@Body('email') email: string) {
+    return this.authService.resendCode(email);
+  }
+
   @UseGuards(LocalAuthGuard)
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Request() req: any, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(req.user, res, req);
+  }
+  @Post('refresh')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Cookies('refreshToken') refreshToken: string,
+    @Cookies('deviceId') deviceId: string,
+    @Res({ passthrough: true }) response: Response,
+    @Request() req,
+  ) {
+    return this.authService.refresh(refreshToken, deviceId, response, req);
+  }
+
+  @Get('info')
+  @HttpCode(HttpStatus.OK)
+  info(@User() user: UserInterface) {
+    return this.authService.info(user);
   }
 }
