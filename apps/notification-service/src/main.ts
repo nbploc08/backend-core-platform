@@ -10,6 +10,8 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
+  // NATS: NatsModule (connect + stream EVENTS) + JetstreamModule (consumer user.registered)
   await app.listen(process.env.PORT ?? 3002);
 }
+
 bootstrap();

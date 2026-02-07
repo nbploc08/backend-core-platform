@@ -1,7 +1,13 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { hashPassword, verifyPassword } from '@common/core';
+import { encrypt, getEncryptKey, hashPassword, verifyPassword } from '@common/core';
+import { CreateUserResponseDto } from './dto/resCreateUser.dto';
 
 @Injectable()
 export class UsersService {
@@ -10,7 +16,7 @@ export class UsersService {
   /**
    * Create a new user with hashed password
    */
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto): Promise<CreateUserResponseDto> {
     // Check if email already exists
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase().trim() },
@@ -22,6 +28,8 @@ export class UsersService {
 
     // Hash password
     const passwordHash = await hashPassword(dto.password);
+    const codeHash = await hashPassword(Math.random().toString(36).substring(2, 15));
+    const code = encrypt(codeHash, getEncryptKey());
 
     // Create user
     const user = await this.prisma.user.create({
@@ -30,21 +38,62 @@ export class UsersService {
         passwordHash,
         name: dto.name,
         phone: dto.phone,
+        isActive: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
       },
     });
 
-    // Return user without password hash
-    const { passwordHash: _, ...result } = user;
-    return result;
+    const emailOtp = await this.prisma.emailOtp.create({
+      data: {
+        userId: user.id,
+        codeHash: codeHash,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    return {
+      userId: user.id,
+      email: user.email,
+      code: code,
+      createdAt: user.createdAt,
+    } as CreateUserResponseDto;
   }
 
-  /**
-   * Find user by email
-   */
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
     });
+  }
+
+  async veryfiRegister(email: string, code: string): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { email: email.toLowerCase().trim() },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.isActive) {
+      throw new BadRequestException('User already verified');
+    }
+    const verifyOtp = await this.prisma.emailOtp.findFirst({
+      where: { userId: user.id, codeHash: code, expiresAt: { gt: new Date() } },
+    });
+    if (!verifyOtp) {
+      throw new BadRequestException('Invalid code');
+    }
+    await this.prisma.emailOtp.update({
+      where: { id: verifyOtp.id },
+      data: { isUsed: true },
+    });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isActive: true },
+    });
+    return true;
   }
 
   /**
@@ -59,10 +108,7 @@ export class UsersService {
   /**
    * Validate user password
    */
-  async validatePassword(
-    email: string,
-    password: string,
-  ): Promise<boolean> {
+  async validatePassword(email: string, password: string): Promise<boolean> {
     const user = await this.findByEmail(email);
     if (!user) return false;
 
