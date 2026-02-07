@@ -23,7 +23,7 @@ export class AuthService {
       code: user.code,
       createdAt: user.createdAt.toISOString(),
     };
-
+    
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
 
     await this.natsService.publish(USER_REGISTERED, validatedPayload);

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { hashPassword, verifyPassword } from '@common/core';
+import { encrypt, getEncryptKey, hashPassword, verifyPassword } from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
 
 @Injectable()
@@ -29,6 +29,8 @@ export class UsersService {
     // Hash password
     const passwordHash = await hashPassword(dto.password);
     const codeHash = await hashPassword(Math.random().toString(36).substring(2, 15));
+    const code = encrypt(codeHash, getEncryptKey());
+
     // Create user
     const user = await this.prisma.user.create({
       data: {
@@ -49,21 +51,18 @@ export class UsersService {
       data: {
         userId: user.id,
         codeHash: codeHash,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
       },
     });
-    // Return user without password hash
+
     return {
       userId: user.id,
       email: user.email,
-      code: emailOtp.codeHash,
+      code: code,
       createdAt: user.createdAt,
     } as CreateUserResponseDto;
   }
 
-  /**
-   * Find user by email
-   */
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },

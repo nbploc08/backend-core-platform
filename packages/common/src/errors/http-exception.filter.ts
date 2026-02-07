@@ -160,11 +160,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
         };
       }
     }
-    // 4) Unknown error — không leak message/stack vào log
+    // 4) Unknown error — log message để debug (config/env, v.v.), response vẫn "Internal server error"
     else {
+      const errMsg =
+        exception instanceof Error ? exception.message : 'unhandled_exception';
       logEntry = {
         level: 'error',
-        bindings: { ...baseBindings, statusCode },
+        bindings: { ...baseBindings, statusCode, errorMessage: errMsg },
         msg: 'unhandled_exception',
       };
     }
