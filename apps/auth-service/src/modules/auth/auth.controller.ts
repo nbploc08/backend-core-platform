@@ -1,7 +1,33 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Query, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Res,
+  Header,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
+
+function escapeHtmlAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function verifyConfirmHtml(email: string, code: string): string {
+  const e = escapeHtmlAttr(email);
+  const c = escapeHtmlAttr(code);
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Verifying...</title></head><body><p>Verifying your email...</p><form id="f" method="POST" action="/auth/register/verify"><input type="hidden" name="email" value="${e}"><input type="hidden" name="code" value="${c}"></form><script>document.getElementById('f').submit();</script></body></html>`;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -13,9 +39,25 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Get('register/verify')
+ 
+
+  @Post('register/verify')
   @HttpCode(HttpStatus.OK)
-  async verify(@Query() verifyDto: VerifyRegisterDto) {
+  async verify(@Body() verifyDto: VerifyRegisterDto) {
     return this.authService.verify(verifyDto);
+  }
+
+
+  @Get('register/verify/confirm')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  confirmPage(
+    @Query() verifyDto: VerifyRegisterDto,
+    @Res() res: Response,
+  ): void {
+    const html = verifyConfirmHtml(
+      verifyDto.email ?? '',
+      verifyDto.code ?? '',
+    );
+    res.send(html);
   }
 }

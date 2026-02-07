@@ -10,10 +10,9 @@ export class MailsService {
     const mailUser = process.env.MAIL_USER?.trim();
     const mailAppPassword = process.env.MAIL_APP_PASSWORD?.trim();
     if (!mailUser || !mailAppPassword) {
-      const missing = [
-        !mailUser && 'MAIL_USER',
-        !mailAppPassword && 'MAIL_APP_PASSWORD',
-      ].filter(Boolean);
+      const missing = [!mailUser && 'MAIL_USER', !mailAppPassword && 'MAIL_APP_PASSWORD'].filter(
+        Boolean,
+      );
       throw new Error(
         `MailsService: Missing required env: ${missing.join(', ')}. Set them in .env`,
       );
@@ -39,15 +38,16 @@ export class MailsService {
 
   async sendVerifyCode(email: string, code: string) {
     const baseUrl = process.env.VERIFY_LINK_BASE_URL || 'http://localhost:3001';
-    const verifyUrl = `${baseUrl}/auth/register/verify?email=${email}&code=${encodeURIComponent(code)}`;
+    // Link trỏ tới trang confirm → form auto-submit POST /auth/register/verify
+    const verifyUrl = `${baseUrl}/auth/register/verify/confirm?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
     return this.sendMail(
       email,
       'Your verification code',
       `
         <h2>Verify your account</h2>
-        <p>Your verification link:</p>
-        <h1><a href="${verifyUrl}">${verifyUrl}</a></h1>
-        <p>This code will expire in 5 minutes.</p>
+        <p>Click the link below to verify (we will send a POST request for you):</p>
+        <p><a href="${verifyUrl}">Verify my email</a></p>
+        <p>This link will expire in 15 minutes.</p>
       `,
     );
   }
