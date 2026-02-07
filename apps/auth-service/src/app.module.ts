@@ -7,7 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NatsModule } from './modules/nats/nats.module';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './modules/auth/strategy/jwt-auth.guard';
+import { JwtAuthGuard } from '@common/core';
 
 @Module({
   imports: [
