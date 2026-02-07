@@ -1,7 +1,6 @@
-import { Controller, Get, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Req } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ErrorCodes, ServiceError } from '@common/core';
-import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
 
 @Controller()
 export class AppController {
