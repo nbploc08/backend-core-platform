@@ -129,11 +129,16 @@ export class AuthService {
   }
 
   async login(user: any, response: any, req: any): Promise<loginResponseDto> {
+    const emailForLog = user?.email;
     try {
       const dataDevice = await this.getDeviceData(req);
       const deviceId = randomUUID();
       const isActive = await this.usersService.checkActive(user.email);
       if (!isActive) {
+        logger.warn(
+          { action: 'login_failed', email: emailForLog, reason: 'account_not_verified' },
+          'Login failed',
+        );
         throw new ServiceError({
           code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
           statusCode: 401,
@@ -141,12 +146,20 @@ export class AuthService {
         });
       }
       const result = await this.issueTokens(user, response, dataDevice, deviceId);
+      logger.info(
+        { action: 'login_success', userId: user.id, email: user.email },
+        'Login success',
+      );
       return result as loginResponseDto;
     } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      logger.warn(
+        { action: 'login_failed', email: emailForLog, reason: (error as Error)?.message },
+        'Login failed',
+      );
       throw new ServiceError({
         code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
         statusCode: 401,
-
         message: error.message ?? 'Invalid email or password',
       });
     }
