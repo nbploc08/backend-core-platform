@@ -5,10 +5,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpLoggerInterceptor } from '@common/core';
 import { HttpExceptionFilter } from '@common/core';
-
+import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable global validation pipe for DTO validation
   app.useGlobalPipes(
     new ValidationPipe({
@@ -17,7 +17,7 @@ async function bootstrap() {
       transform: true, // Auto-transform payloads to DTO instances
     }),
   );
-  
+  app.use(cookieParser());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
