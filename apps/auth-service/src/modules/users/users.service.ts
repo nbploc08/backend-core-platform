@@ -131,20 +131,35 @@ export class UsersService {
     const ttlSeconds = Number(process.env.JWT_REFRESH_EXPIRES_IN);
     const refreshTtlSeconds =
       Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds : 60 * 60 * 24 * 30; // default 30 days
-
     const expiresAt = new Date(Date.now() + refreshTtlSeconds * 1000);
+    const tokenHashNew = await hashPassword(refreshTokenNew);
 
-    return await this.prisma.refreshToken.upsert({
-      where: {
+    const existing = await this.prisma.refreshToken.findFirst({
+      where: { userId: id, deviceId, revokedAt: null },
+    });
+
+    if (existing) {
+      if (refreshTokenOld) {
+        const valid = await verifyPassword(existing.tokenHash, refreshTokenOld);
+        if (!valid) {
+          throw new ServiceError({
+            code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
+            statusCode: 401,
+            message: 'Invalid refresh token',
+          });
+        }
+      }
+      return await this.prisma.refreshToken.update({
+        where: { id: existing.id },
+        data: { tokenHash: tokenHashNew, expiresAt },
+      });
+    }
+
+    return await this.prisma.refreshToken.create({
+      data: {
         userId: id,
-        tokenHash: refreshTokenOld ?? '',
-        deviceId: deviceId,
-      },
-      update: { tokenHash: refreshTokenNew },
-      create: {
-        userId: id,
-        tokenHash: refreshTokenNew,
-        deviceId: deviceId,
+        tokenHash: tokenHashNew,
+        deviceId,
         deviceName: dataDevice.deviceName,
         ipAddress: dataDevice.ip,
         userAgent: dataDevice.userAgent,
@@ -154,48 +169,42 @@ export class UsersService {
   }
   async findByRefreshToken(
     id: string,
-    permVersion: number,
+    _permVersion: number,
     refreshToken: string,
-    deviceId: any,
+    deviceId: string,
   ): Promise<UserAuthResponseDto> {
-    const user = await this.prisma.user.findUnique({
+    const session = await this.prisma.refreshToken.findFirst({
       where: {
-        id: id,
-        permVersion: permVersion,
-        refreshTokens: {
-          some: {
-            tokenHash: refreshToken,
-            deviceId: deviceId,
-            expiresAt: {
-              gt: new Date(),
-            },
-            revokedAt: null,
-          },
-        },
+        userId: id,
+        deviceId,
+        expiresAt: { gt: new Date() },
+        revokedAt: null,
       },
-      select: {
-        id: true,
-        email: true,
-        permVersion: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      include: { user: true },
     });
-    if (!user) {
+    if (!session) {
       throw new ServiceError({
         code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
         statusCode: 401,
         message: 'Invalid refresh token',
       });
     }
+    const valid = await verifyPassword(session.tokenHash, refreshToken);
+    if (!valid) {
+      throw new ServiceError({
+        code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
+        statusCode: 401,
+        message: 'Invalid refresh token',
+      });
+    }
+    const u = session.user;
     return {
-      id: user.id,
-      email: user.email,
-      permVersion: user.permVersion,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      id: u.id,
+      email: u.email,
+      permVersion: u.permVersion,
+      isActive: u.isActive,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
     } as UserAuthResponseDto;
   }
   async info(user: UserInterface): Promise<InfoUserDto> {
@@ -212,13 +221,14 @@ export class UsersService {
     })) as InfoUserDto;
   }
   async logoutDevice(deviceId: string, userId: string, refreshToken: string) {
+    const session = await this.prisma.refreshToken.findFirst({
+      where: { userId, deviceId, revokedAt: null },
+    });
+    if (!session) return { count: 0 };
+    const valid = await verifyPassword(session.tokenHash, refreshToken);
+    if (!valid) return { count: 0 };
     return await this.prisma.refreshToken.updateMany({
-      where: {
-        deviceId: deviceId,
-        userId: userId,
-        tokenHash: refreshToken,
-        revokedAt: null,
-      },
+      where: { id: session.id },
       data: { revokedAt: new Date() },
     });
   }
