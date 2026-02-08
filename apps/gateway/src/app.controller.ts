@@ -1,4 +1,4 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ErrorCodes, Public, ServiceError } from '@common/core';
 
@@ -13,7 +13,7 @@ export class AppController {
   }
   @Get('health')
   @Public()
-  health(@Req() req: any) {
+  health() {
     return { ok: true };
   }
 

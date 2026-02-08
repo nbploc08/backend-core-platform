@@ -33,6 +33,7 @@ export class UsersService {
     const user = await this.findOneByEmail(normalizedEmail);
     const validPassword = user ? await verifyPassword(user.passwordHash, pass) : false;
     if (user && validPassword) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit passwordHash from result
       const { passwordHash, ...result } = user;
       return result;
     }

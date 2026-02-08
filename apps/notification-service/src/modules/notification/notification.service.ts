@@ -23,6 +23,7 @@ export class NotificationService {
     return `This action returns a #${id} notification`;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- placeholder for future impl
   update(id: number, updateNotificationDto: UpdateNotificationDto) {
     return `This action updates a #${id} notification`;
   }

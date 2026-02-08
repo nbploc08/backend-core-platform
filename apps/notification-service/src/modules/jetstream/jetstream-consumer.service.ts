@@ -4,9 +4,8 @@ import type { JsMsg } from 'nats';
 import { AckPolicy, DeliverPolicy, ReplayPolicy } from 'nats';
 import { logger, ServiceError } from '@common/core';
 import { NatsService } from '../nats/nats.service';
-import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
+import { UserRegisteredSchema } from '@contracts/core';
 import { NotificationService } from '../notification/notification.service';
-
 
 type ConsumerConfigLocal = {
   streamName: string;

@@ -88,15 +88,15 @@ INTERNAL_JWT_AUDIENCE=internal
 
 ### 3.5. Tóm tắt file auth-service
 
-| Việc | File / vị trí |
-|------|----------------|
-| Env | `.env.example` + `.env`: `INTERNAL_JWT_*` |
-| Strategy | `modules/auth/strategy/internal-jwt.strategy.ts` |
-| Guard | `modules/auth/strategy/internal-jwt-auth.guard.ts` |
-| Controller | `modules/internal/internal.controller.ts` (hoặc trong auth module) |
-| Service | `UsersService.getProfileById(userId)` hoặc dùng `info({ id: userId })` |
-| AuthModule | Import InternalController, provider InternalJwtStrategy |
-| Global guard | Bỏ qua path `/internal/*` (hoặc metadata @Internal()) |
+| Việc         | File / vị trí                                                          |
+| ------------ | ---------------------------------------------------------------------- |
+| Env          | `.env.example` + `.env`: `INTERNAL_JWT_*`                              |
+| Strategy     | `modules/auth/strategy/internal-jwt.strategy.ts`                       |
+| Guard        | `modules/auth/strategy/internal-jwt-auth.guard.ts`                     |
+| Controller   | `modules/internal/internal.controller.ts` (hoặc trong auth module)     |
+| Service      | `UsersService.getProfileById(userId)` hoặc dùng `info({ id: userId })` |
+| AuthModule   | Import InternalController, provider InternalJwtStrategy                |
+| Global guard | Bỏ qua path `/internal/*` (hoặc metadata @Internal())                  |
 
 ---
 
@@ -163,20 +163,20 @@ INTERNAL_JWT_AUDIENCE=internal
 
 ### 4.7. Tóm tắt file gateway
 
-| Việc | File / vị trí |
-|------|----------------|
-| Env | `.env.example` + `.env`: `JWT_*`, `AUTH_SERVICE_URL`, `INTERNAL_JWT_*` |
-| User JWT verify | Dùng common JwtStrategy (bổ sung issuer/audience) hoặc gateway copy strategy auth-service; JwtModule (user), JwtAuthGuard global, @Public() cho health |
-| Internal JWT sign | JwtModule (internal) + InternalJwtService (signInternalToken(userId)) |
-| HTTP client | HttpModule, AuthClientService (getProfileByUserId(userId, requestId)), headers Authorization + x-request-id |
-| Route /me | Controller GET /me, guard user JWT, gọi AuthClientService.getProfileByUserId(req.user.userId, req.requestId) |
-| Error map | AuthClientService khi response không 2xx → throw ServiceError, traceId = requestId |
+| Việc              | File / vị trí                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Env               | `.env.example` + `.env`: `JWT_*`, `AUTH_SERVICE_URL`, `INTERNAL_JWT_*`                                                                                 |
+| User JWT verify   | Dùng common JwtStrategy (bổ sung issuer/audience) hoặc gateway copy strategy auth-service; JwtModule (user), JwtAuthGuard global, @Public() cho health |
+| Internal JWT sign | JwtModule (internal) + InternalJwtService (signInternalToken(userId))                                                                                  |
+| HTTP client       | HttpModule, AuthClientService (getProfileByUserId(userId, requestId)), headers Authorization + x-request-id                                            |
+| Route /me         | Controller GET /me, guard user JWT, gọi AuthClientService.getProfileByUserId(req.user.userId, req.requestId)                                           |
+| Error map         | AuthClientService khi response không 2xx → throw ServiceError, traceId = requestId                                                                     |
 
 ---
 
 ## 5. Thứ tự implement gợi ý
 
-1. **Auth-service:** Thêm env INTERNAL_JWT_* → Internal JWT Strategy + Guard → UsersService.getProfileById (nếu chưa có) → Internal controller GET /internal/profile → Global guard bỏ qua /internal/*.
+1. **Auth-service:** Thêm env INTERNAL*JWT*_ → Internal JWT Strategy + Guard → UsersService.getProfileById (nếu chưa có) → Internal controller GET /internal/profile → Global guard bỏ qua /internal/_.
 2. **Gateway:** Thêm env (user JWT + AUTH_SERVICE_URL + internal JWT) → User JWT verify (strategy + guard) + route /me tạm trả req.user (không gọi auth) để test → InternalJwtService (sign) → HttpModule + AuthClientService (getProfileByUserId, x-request-id) → GET /me gọi AuthClientService.
 3. **E2E:** Client login qua auth-service (hoặc gateway proxy login) lấy access_token → gọi gateway GET /me với Bearer token → nhận profile; kiểm tra header x-request-id và traceId trong response lỗi.
 

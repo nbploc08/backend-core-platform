@@ -16,8 +16,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
-import { InternalJwtAuthGuard } from './strategy/jwt-auth.guard';
-import { Cookies, ErrorCodes, Info, Public, ServiceError, User } from '@common/core';
+import { Cookies, Info, Public, User } from '@common/core';
 import type { UserInterface } from '../../entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
@@ -35,7 +34,7 @@ function verifyConfirmHtml(email: string, code: string): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Verifying...</title></head><body><p>Verifying your email...</p><form id="f" method="POST" action="/auth/register/verify"><input type="hidden" name="email" value="${e}"><input type="hidden" name="code" value="${c}"></form><script>document.getElementById('f').submit();</script></body></html>`;
 }
 
-@Controller('auth')
+@Controller('auth/internal')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -83,7 +82,7 @@ export class AuthController {
     return this.authService.refresh(refreshToken, deviceId, response, req);
   }
 
-  @Get('internal/me')
+  @Get('me')
   @HttpCode(HttpStatus.OK)
   me(@Info('data') info: any) {
     return this.authService.info(info.id);

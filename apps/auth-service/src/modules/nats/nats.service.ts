@@ -27,7 +27,6 @@ export class NatsService implements OnModuleInit, OnModuleDestroy {
       this.js = this.nc.jetstream();
       this.jsm = await this.nc.jetstreamManager();
 
-    
       await this.ensureStream();
 
       logger.info({ natsUrl }, 'Connected to NATS JetStream');
@@ -61,11 +60,9 @@ export class NatsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-
   isConnected(): boolean {
     return this.nc !== null && !this.nc.isClosed();
   }
-
 
   async publish(subject: string, data: unknown): Promise<void> {
     if (!this.js) {

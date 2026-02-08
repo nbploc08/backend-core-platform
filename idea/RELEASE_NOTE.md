@@ -3,7 +3,7 @@
 **Release date:** 08/02/2026  
 **Scope:** Auth Service + Gateway + Shared packages (common, contracts)  
 **Device:** Backend API (NestJS) — auth-service, gateway, packages/common, packages/contracts  
-**Branch:** *(thay bằng tên branch hiện tại, ví dụ: `feat/auth-core-day10-12` hoặc `main`)*
+**Branch:** _(thay bằng tên branch hiện tại, ví dụ: `feat/auth-core-day10-12` hoặc `main`)_
 
 ---
 
@@ -64,13 +64,13 @@ Hoàn thành các yêu cầu **Day 10, 11, 12, 13** (DAILY_SCHEDULE_CORE_V1): ch
 
 ### Backend API — Các endpoint liên quan
 
-| Method | Path | Mô tả |
-|--------|------|--------|
-| POST | /auth/login | Login; trả access_token + set cookie refreshToken, deviceId. |
-| POST | /auth/refresh | Đổi refresh token (rotate); cookie refreshToken, deviceId. |
-| GET | /auth/info | Thông tin user (cần Bearer token). |
-| POST | /auth/logout-device | Revoke session theo device. |
-| POST | /auth/logout-all | Revoke toàn bộ session user. |
+| Method | Path                | Mô tả                                                        |
+| ------ | ------------------- | ------------------------------------------------------------ |
+| POST   | /auth/login         | Login; trả access_token + set cookie refreshToken, deviceId. |
+| POST   | /auth/refresh       | Đổi refresh token (rotate); cookie refreshToken, deviceId.   |
+| GET    | /auth/info          | Thông tin user (cần Bearer token).                           |
+| POST   | /auth/logout-device | Revoke session theo device.                                  |
+| POST   | /auth/logout-all    | Revoke toàn bộ session user.                                 |
 
 ---
 
@@ -122,4 +122,4 @@ idea/
 
 ---
 
-*Cập nhật **Branch** ở đầu file bằng tên branch thực tế trước khi release.*
+_Cập nhật **Branch** ở đầu file bằng tên branch thực tế trước khi release._

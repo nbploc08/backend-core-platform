@@ -31,8 +31,7 @@ export function handleAxiosError(err: unknown, defaultMessage = 'Request failed'
         : status === 404
           ? ErrorCodes.NOT_FOUND
           : ErrorCodes.INTERNAL);
-    const message =
-      body?.error?.message ?? (err.message && String(err.message)) ?? defaultMessage;
+    const message = body?.error?.message ?? (err.message && String(err.message)) ?? defaultMessage;
     throw new ServiceError({
       code,
       statusCode: status,

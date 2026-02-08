@@ -125,7 +125,7 @@ export class AuthService {
   async verify(dto: VerifyRegisterDto): Promise<boolean> {
     try {
       return await this.usersService.veryfiRegister(dto.email, dto.code);
-    } catch (error) {
+    } catch {
       logger.error({ dto }, 'Failed to verify user');
       throw new BadRequestException('Failed to verify user');
     }

@@ -1,7 +1,7 @@
 # PROJECT_TREE — Cây thư mục dự án Core Platform v1
 
 > Core Platform v1: Auth + Gateway + Notification (+ Notification Worker)
-> 
+>
 > Stack: NestJS + TS, npm workspaces, Postgres (1 instance tách schema), Prisma, NATS JetStream, Redis (rate limit + BullMQ), WS realtime bell notifications.
 
 ```

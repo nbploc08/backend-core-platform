@@ -1,7 +1,23 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
-import { Public, User } from '@common/core';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { Cookies, Public, User } from '@common/core';
 import { JwtAuthGuard } from './strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
+
+function getRequestId(req: Request & { requestId?: string }): string {
+  const rid = req.requestId ?? req.headers['x-request-id'];
+  return Array.isArray(rid) ? (rid[0] ?? '') : (rid ?? '');
+}
 
 @Controller('client/auth')
 @UseGuards(JwtAuthGuard)
@@ -11,18 +27,94 @@ export class AuthClientController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async me(@User() user: { userId: string }, @Req() req: Request & { requestId?: string }) {
-    const authHeader = req.headers['authorization'] as string;
-    const bearerToken =
-      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-        ? authHeader.slice(7)
-        : undefined;
-    const requestId = req.requestId ?? '';
-    return this.authClient.getProfileByUserId(user.userId, requestId);
+    return this.authClient.getProfileByUserId(user.userId, getRequestId(req));
   }
+
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: any, @Req() req: Request) {
-    return this.authClient.login(loginDto, req.headers['x-request-id'] as string);
+  async login(
+    @Body() loginDto: { email?: string; password?: string; username?: string },
+    @Req() req: Request & { requestId?: string },
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    return this.authClient.login(loginDto, getRequestId(req), res);
+  }
+
+  @Public()
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(
+    @Body() registerDto: Record<string, unknown>,
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.register(registerDto, getRequestId(req));
+  }
+
+  @Public()
+  @Post('register/verify')
+  @HttpCode(HttpStatus.OK)
+  async verify(
+    @Body() verifyDto: { email: string; code: string },
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.verify(verifyDto, getRequestId(req));
+  }
+
+  @Public()
+  @Post('register/verify/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirm(
+    @Body() confirmDto: { email: string; code: string },
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.confirm(confirmDto, getRequestId(req));
+  }
+
+  @Public()
+  @Post('resend-code')
+  @HttpCode(HttpStatus.OK)
+  async resendCode(@Body('email') email: string, @Req() req: Request & { requestId?: string }) {
+    return this.authClient.resendCode(email, getRequestId(req));
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Cookies('refreshToken') refreshToken: string,
+    @Cookies('deviceId') deviceId: string,
+    @Req() req: Request & { requestId?: string },
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    return this.authClient.refresh(refreshToken ?? '', deviceId ?? '', getRequestId(req), res);
+  }
+
+  @Post('logout-device')
+  @HttpCode(HttpStatus.OK)
+  async logoutDevice(
+    @Cookies('deviceId') deviceId: string,
+    @Cookies('refreshToken') refreshToken: string,
+    @User() user: { userId: string },
+    @Req() req: Request & { requestId?: string },
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    return this.authClient.logoutDevice(
+      deviceId ?? '',
+      refreshToken ?? '',
+      user.userId,
+      getRequestId(req),
+      res,
+    );
+  }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(
+    @User() user: { userId: string },
+    @Req() req: Request & { requestId?: string },
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    return this.authClient.logoutAll(user.userId, getRequestId(req), res);
   }
 }
