@@ -82,9 +82,9 @@ export class AuthController {
     return this.authService.refresh(refreshToken, deviceId, response, req);
   }
 
-  @Get('info')
+  @Get('me')
   @HttpCode(HttpStatus.OK)
-  info(@User() user: UserInterface) {
+  me(@User() user: UserInterface) {
     return this.authService.info(user);
   }
 

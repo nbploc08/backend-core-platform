@@ -51,9 +51,12 @@ export class AuthService {
     deviceId: string,
     refreshTokenOld?: string,
   ): Promise<loginResponseDto> {
-    const payload = { email: user.email, sub: user.id };
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      permVersion: user.permVersion,
+    };
 
-    //
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: Number(process.env.JWT_REFRESH_EXPIRES_IN) || 60 * 60 * 24 * 30,
     });
@@ -128,7 +131,7 @@ export class AuthService {
     }
   }
 
-  async login(user: any, response: any, req: any): Promise<loginResponseDto> {
+  async login(user: UserInterface, response: any, req: any): Promise<loginResponseDto> {
     const emailForLog = user?.email;
     try {
       const dataDevice = await this.getDeviceData(req);
@@ -146,10 +149,7 @@ export class AuthService {
         });
       }
       const result = await this.issueTokens(user, response, dataDevice, deviceId);
-      logger.info(
-        { action: 'login_success', userId: user.id, email: user.email },
-        'Login success',
-      );
+      logger.info({ action: 'login_success', userId: user.id, email: user.email }, 'Login success');
       return result as loginResponseDto;
     } catch (error) {
       if (error instanceof ServiceError) throw error;
@@ -173,24 +173,16 @@ export class AuthService {
     try {
       const decoded = this.jwtService.verify(refreshTokenOld, {
         secret: process.env.JWT_SECRET,
+        issuer: process.env.JWT_ISSUER || 'auth-service',
+        audience: process.env.JWT_AUDIENCE || 'api',
       });
       const dataDevice = await this.getDeviceData(req);
       const user = await this.usersService.findByRefreshToken(
         decoded.sub,
+        decoded.permVersion,
         refreshTokenOld,
         deviceId,
       );
-      if (!user) {
-        response.clearCookie('refreshToken');
-        response.clearCookie('deviceId');
-        throw new ServiceError({
-          code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
-          statusCode: 401,
-          message: 'Invalid refresh token',
-        });
-      }
-
-      //
       return await this.issueTokens(user, response, dataDevice, deviceId, refreshTokenOld);
     } catch (error) {
       response.clearCookie('refreshToken');

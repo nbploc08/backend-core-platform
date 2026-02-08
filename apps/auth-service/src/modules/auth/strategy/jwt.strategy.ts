@@ -10,10 +10,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET') || 'change-me',
+      issuer: configService.get<string>('JWT_ISSUER') || 'auth-service',
+      audience: configService.get<string>('JWT_AUDIENCE') || 'api',
     });
   }
 
-  async validate(payload: any) {
-    return { userId: payload.sub, email: payload.email };
+  async validate(payload: { sub: string; email: string; permVersion?: number }) {
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      permVersion: payload.permVersion ?? 1,
+    };
   }
 }

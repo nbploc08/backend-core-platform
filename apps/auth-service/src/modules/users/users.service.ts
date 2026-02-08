@@ -154,12 +154,14 @@ export class UsersService {
   }
   async findByRefreshToken(
     id: string,
+    permVersion: number,
     refreshToken: string,
     deviceId: any,
   ): Promise<UserAuthResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: {
         id: id,
+        permVersion: permVersion,
         refreshTokens: {
           some: {
             tokenHash: refreshToken,
@@ -171,8 +173,30 @@ export class UsersService {
           },
         },
       },
+      select: {
+        id: true,
+        email: true,
+        permVersion: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-    return user as UserAuthResponseDto;
+    if (!user) {
+      throw new ServiceError({
+        code: ErrorCodes.AUTH_REFRESH_TOKEN_INVALID,
+        statusCode: 401,
+        message: 'Invalid refresh token',
+      });
+    }
+    return {
+      id: user.id,
+      email: user.email,
+      permVersion: user.permVersion,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    } as UserAuthResponseDto;
   }
   async info(user: UserInterface): Promise<InfoUserDto> {
     return (await this.prisma.user.findUnique({

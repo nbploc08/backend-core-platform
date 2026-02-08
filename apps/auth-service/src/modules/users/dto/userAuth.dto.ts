@@ -1,15 +1,11 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsString } from 'class-validator';
 
 import { IsDate, IsEmail, IsNotEmpty } from 'class-validator';
 
 export class UserAuthResponseDto {
-  @IsNotEmpty()
-  @IsString()
-  passwordHash: string;
   @IsString()
   @IsNotEmpty()
   id: string;
-
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -17,6 +13,9 @@ export class UserAuthResponseDto {
   @IsBoolean()
   @IsNotEmpty()
   isActive: boolean;
+  @IsNumber()
+  @IsNotEmpty()
+  permVersion: number;
   @IsDate()
   @IsNotEmpty()
   createdAt: Date;
