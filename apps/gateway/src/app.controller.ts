@@ -1,21 +1,24 @@
 import { Controller, Get, Req } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ErrorCodes, ServiceError } from '@common/core';
+import { ErrorCodes, Public, ServiceError } from '@common/core';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
+  @Public()
   getHello(): string {
     return this.appService.getHello();
   }
   @Get('health')
+  @Public()
   health(@Req() req: any) {
     return { ok: true };
   }
 
   @Get('debug/service-error')
+  @Public()
   debugServiceError() {
     throw new ServiceError({
       code: ErrorCodes.AUTH_INVALID_CREDENTIALS,

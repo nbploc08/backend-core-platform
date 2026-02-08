@@ -252,6 +252,23 @@ export class UsersService {
   }
 
   /**
+   * Get profile by userId (for internal endpoint)
+   */
+  async getProfileById(userId: string): Promise<InfoUserDto | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        isActive: true,
+      },
+    });
+    return user as InfoUserDto | null;
+  }
+
+  /**
    * Validate user password
    */
   async validatePassword(email: string, password: string): Promise<boolean> {

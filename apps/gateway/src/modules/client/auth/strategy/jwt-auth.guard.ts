@@ -1,11 +1,11 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { IS_PUBLIC_KEY } from '@common/core';
 
 /**
- * Guard JWT dùng chung: route có @Public() thì bỏ qua, còn lại bắt buộc Authorization: Bearer <token>.
- * Dùng với APP_GUARD trong AppModule để bật bảo vệ toàn cục.
+ * Guard JWT user tại gateway: route có @Public() thì bỏ qua, còn lại bắt buộc Bearer token.
+ * Dùng bản local để Nest inject Reflector chắc chắn (tránh lỗi khi dùng guard từ @common/core làm APP_GUARD).
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {

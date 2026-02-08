@@ -16,7 +16,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
-import { Cookies, Public, User } from '@common/core';
+import { InternalJwtAuthGuard } from './strategy/jwt-auth.guard';
+import { Cookies, ErrorCodes, Info, Public, ServiceError, User } from '@common/core';
 import type { UserInterface } from '../../entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
@@ -82,10 +83,10 @@ export class AuthController {
     return this.authService.refresh(refreshToken, deviceId, response, req);
   }
 
-  @Get('me')
+  @Get('internal/me')
   @HttpCode(HttpStatus.OK)
-  me(@User() user: UserInterface) {
-    return this.authService.info(user);
+  me(@Info('data') info: any) {
+    return this.authService.info(info.id);
   }
 
   @Post('logout-device')
