@@ -123,7 +123,7 @@ export class JetstreamConsumerService implements OnModuleInit, OnModuleDestroy {
                 { stream: streamName, consumer: durableName, error: formattedError },
                 'Error handling JetStream message',
               );
-              msg.ack();
+              msg.nak();
             }
           }
         } catch (err) {
