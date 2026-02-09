@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { UserInterface } from '../../entities/user.entities';
 import { JwtService } from '@nestjs/jwt';
 import { InfoUserDto } from '../users/dto/infoUser.dto';
+import { QueueService } from '../queue/queue.service';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly natsService: NatsService,
     private readonly jwtService: JwtService,
+    private readonly queueService: QueueService,
   ) {}
   private async getDeviceData(req: any): Promise<any> {
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip;
@@ -103,7 +105,8 @@ export class AuthService {
 
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
 
-    await this.natsService.publish(USER_REGISTERED, validatedPayload);
+    // await this.natsService.publish(USER_REGISTERED, validatedPayload);
+    await this.queueService.sendVerifyCode(validatedPayload);
 
     logger.info(
       {
