@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { NatsService } from '../nats/nats.service';
 import { RegisterDto } from './dto/register.dto';
@@ -20,7 +20,7 @@ import { UserInterface } from '../../entities/user.entities';
 import { JwtService } from '@nestjs/jwt';
 import { InfoUserDto } from '../users/dto/infoUser.dto';
 import { QueueService } from '../queue/queue.service';
-
+import { PASSWORD_RESET_REQUESTED, PasswordResetRequestedSchema } from '@contracts/core';
 @Injectable()
 export class AuthService {
   constructor(
@@ -259,5 +259,43 @@ export class AuthService {
     response.clearCookie('refreshToken');
     response.clearCookie('deviceId');
     return 'logout success';
+  }
+  async forgotPassword(forgotPasswordDto: { email: string }): Promise<any> {
+    try {
+      const user = await this.usersService.findOneByEmail(forgotPasswordDto.email);
+      if (!user) {
+        throw new ServiceError({
+          code: ErrorCodes.NOT_FOUND,
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Email not found',
+        });
+      }
+      const payload = await this.usersService.createPasswordReset(user.id);
+      const eventPayload = {
+        userId: user.id,
+        email: user.email,
+        token: payload.token,
+        expiresAt: payload.expiresAt.toISOString(),
+      };
+      const validatedPayload = PasswordResetRequestedSchema.parse(eventPayload);
+      await this.queueService.sendResetPassword(validatedPayload);
+      logger.info(
+        {
+          action: PASSWORD_RESET_REQUESTED,
+          userId: user.id,
+          email: user.email,
+          token: payload.token,
+          expiresAt: payload.expiresAt.toISOString(),
+        },
+        'Password reset email sent',
+      );
+      return { message: 'Password reset email sent' };
+    } catch (error) {
+      throw new ServiceError({
+        code: ErrorCodes.INTERNAL,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message ?? 'Error creating password reset',
+      });
+    }
   }
 }

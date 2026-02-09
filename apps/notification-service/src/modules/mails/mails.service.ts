@@ -51,4 +51,13 @@ export class MailsService {
       `,
     );
   }
+  async sendResetPassword(email: string, token: string) {
+    const baseUrl = process.env.VERIFY_LINK_BASE_URL || 'http://localhost:3001';
+    const resetPasswordUrl = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(token)}`;
+    return this.sendMail(
+      email,
+      'Reset your password',
+      `Click the link below to reset your password: ${resetPasswordUrl}`,
+    );
+  }
 }

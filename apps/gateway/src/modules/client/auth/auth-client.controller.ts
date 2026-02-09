@@ -117,4 +117,14 @@ export class AuthClientController {
   ) {
     return this.authClient.logoutAll(user.userId, getRequestId(req), res);
   }
+
+  @Public()
+  @Post('forgot/password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() forgotPasswordDto: { email: string },
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.forgotPassword(forgotPasswordDto, getRequestId(req));
+  }
 }

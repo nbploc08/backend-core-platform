@@ -12,11 +12,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService): Promise<BullRootModuleOptions> => ({
-        connection: {
-          url: configService.get<string>('REDIS_URL') || '',
-        },
-      }),
+      useFactory: async (configService: ConfigService): Promise<BullRootModuleOptions> => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (!redisUrl) {
+          throw new Error('REDIS_URL is not configured. Please set REDIS_URL in .env file');
+        }
+        return {
+          connection: {
+            url: redisUrl,
+          },
+        };
+      },
     }),
 
     BullModule.registerQueue({

@@ -252,4 +252,18 @@ export class AuthClientService {
       handleAxiosError(err, 'Auth service request failed');
     }
   }
+  async forgotPassword(forgotPasswordDto: { email: string }, requestId: string): Promise<any> {
+    try {
+      const response = await this.client.post<any>(
+        'auth/internal/forgot/password',
+        forgotPasswordDto,
+        {
+          headers: this.internalHeaders(requestId),
+        },
+      );
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Auth service request failed');
+    }
+  }
 }

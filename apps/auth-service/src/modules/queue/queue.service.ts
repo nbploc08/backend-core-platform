@@ -1,4 +1,8 @@
-import { UserRegisteredEvent } from '@contracts/core';
+import {
+  PASSWORD_RESET_REQUESTED,
+  PasswordResetRequestedEvent,
+  UserRegisteredEvent,
+} from '@contracts/core';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bullmq';
@@ -43,9 +47,7 @@ export class QueueService implements OnModuleInit {
         err.code === 'ECONNREFUSED' ||
         (err.name === 'AggregateError' && err.code === 'ECONNREFUSED')
       ) {
-        logger.error(
-          'Failed to establish initial Redis connection: Connection refused',
-        );
+        logger.error('Failed to establish initial Redis connection: Connection refused');
       } else {
         const message =
           error.name === 'AggregateError' && 'errors' in error
@@ -65,5 +67,8 @@ export class QueueService implements OnModuleInit {
 
   async sendVerifyCode(userRegisteredEvent: UserRegisteredEvent) {
     await this.queue.add('send-verify-code', userRegisteredEvent);
+  }
+  async sendResetPassword(passwordResetRequestedEvent: PasswordResetRequestedEvent) {
+    await this.queue.add(PASSWORD_RESET_REQUESTED, passwordResetRequestedEvent);
   }
 }

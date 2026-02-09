@@ -19,6 +19,7 @@ model User {
   refreshTokens RefreshToken[]
 
   emailOtp     EmailOtp?
+  passwordResets PasswordReset[]
 
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -56,4 +57,18 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id],onDelete: Cascade )
     @@index([userId])
     @@map("refreshTokens")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("passwordResets")
 }

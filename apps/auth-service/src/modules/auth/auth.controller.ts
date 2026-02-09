@@ -104,4 +104,10 @@ export class AuthController {
   async logoutAll(@Res({ passthrough: true }) response: Response, @User() user: UserInterface) {
     return this.authService.logoutAll(response, user);
   }
+
+  @Post('forgot/password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() forgotPasswordDto: { email: string }) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
 }

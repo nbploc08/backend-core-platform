@@ -22,6 +22,22 @@ import { InfoUserDto } from './dto/infoUser.dto';
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+  async createPasswordReset(userId: string): Promise<any> {
+    const token = Math.random().toString(36).substring(2, 15);
+    const tokenHash = await hashPassword(token);
+    const tokenHashEncrypted = encrypt(tokenHash, getEncryptKey());
+    await this.prisma.passwordReset.create({
+      data: {
+        userId: userId,
+        tokenHash: tokenHash,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+    return {
+      token: tokenHashEncrypted,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    };
+  }
   async findOneByEmail(email: string) {
     return await this.prisma.user.findFirst({
       where: { email },

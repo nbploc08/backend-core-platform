@@ -1,3 +1,6 @@
+import { ErrorCodes } from '../errors/error-codes';
+import { ServiceError } from '../errors/service-error';
+import { HttpStatus } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 
 const ALGO = 'aes-256-gcm';
@@ -11,11 +14,14 @@ const ENV_KEY = 'ENCRYPT_KEY';
 export function getEncryptKey(): string {
   const key = process.env[ENV_KEY]?.trim();
   if (!key) {
-    throw new Error(
-      `[getEncryptKey] Missing ${ENV_KEY}: not set or empty. ` +
+    throw new ServiceError({
+      code: ErrorCodes.INTERNAL,
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message:
+        `[getEncryptKey] Missing ${ENV_KEY}: not set or empty. ` +
         `Check (1) .env file exists and is loaded (root .env or app .env, ConfigModule envFilePath) ` +
         `and (2) ${ENV_KEY}=<your-secret> is defined in that file.`,
-    );
+    });
   }
   return key;
 }
