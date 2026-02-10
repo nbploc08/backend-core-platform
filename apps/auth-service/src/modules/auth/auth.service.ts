@@ -345,9 +345,9 @@ export class AuthService {
       const user = await this.usersService.findOneByEmail(forgotPasswordResetDto.email);
       if (!user) {
         throw new ServiceError({
-          code: ErrorCodes.NOT_FOUND,
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Email not found',
+          code: ErrorCodes.BAD_REQUEST,
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Bad request',
         });
       }
       await this.usersService.resetPassword(

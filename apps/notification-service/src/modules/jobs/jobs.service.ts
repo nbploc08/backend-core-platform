@@ -54,6 +54,11 @@ export class JobsService extends WorkerHost implements OnModuleInit {
 
     //  Khi job fail sau N lần retry → audit log email.failed + push vào DLQ
     this.worker.on('failed', async (job: Job | undefined, error: Error) => {
+      // Nếu job vẫn còn lượt retry thì return, để BullMQ tự handle retry
+      if (job?.opts?.attempts && job.attemptsMade < job.opts.attempts) {
+        return;
+      }
+
       const traceId = job?.id ?? 'unknown';
       const jobName = job?.name ?? 'unknown';
       const attemptsMade = job?.attemptsMade ?? 0;
