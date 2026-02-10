@@ -261,16 +261,17 @@ export class AuthService {
     response.clearCookie('deviceId');
     return 'logout success';
   }
-  async forgotPassword(forgotPasswordDto: { email: string }): Promise<any> {
+
+  async forgotPassword(forgotPasswordDto: { email: string }): Promise<{ message: string }> {
+    const genericMessage =
+      'If an account with that email exists, a password reset link has been sent.';
+
     try {
       const user = await this.usersService.findOneByEmail(forgotPasswordDto.email);
       if (!user) {
-        throw new ServiceError({
-          code: ErrorCodes.NOT_FOUND,
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Email not found',
-        });
+        return { message: genericMessage };
       }
+
       const payload = await this.usersService.createPasswordReset(user.id);
       const eventPayload = {
         userId: user.id,
@@ -290,13 +291,16 @@ export class AuthService {
         },
         'Password reset email sent',
       );
-      return { message: 'Password reset email sent' };
+      return { message: genericMessage };
     } catch (error) {
-      throw new ServiceError({
-        code: ErrorCodes.INTERNAL,
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: error.message ?? 'Error creating password reset',
-      });
+      logger.error(
+        {
+          error: error.message,
+          email: forgotPasswordDto.email,
+        },
+        'Forgot password: failed to create or send reset',
+      );
+      return { message: genericMessage };
     }
   }
   async forgotPasswordVerify(forgotPasswordVerifyDto: {
@@ -351,6 +355,7 @@ export class AuthService {
         forgotPasswordResetDto.password,
         forgotPasswordResetDto.code,
       );
+      await this.usersService.logoutAllDevices(user.id);
       logger.info(
         {
           action: 'password_reset_success',

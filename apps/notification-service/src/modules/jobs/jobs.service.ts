@@ -10,6 +10,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
   constructor(
     private readonly mailsService: MailsService,
     @InjectQueue('mail') private readonly queue: Queue,
+    @InjectQueue('mail-dlq') private readonly dlqQueue: Queue,
   ) {
     super();
   }
@@ -50,6 +51,42 @@ export class JobsService extends WorkerHost implements OnModuleInit {
 
     // Xử lý lỗi cho Queue
     handleRedisError(this.queue, 'Queue');
+
+    //  Khi job fail sau N lần retry → audit log email.failed + push vào DLQ
+    this.worker.on('failed', async (job: Job | undefined, error: Error) => {
+      const traceId = job?.id ?? 'unknown';
+      const jobName = job?.name ?? 'unknown';
+      const attemptsMade = job?.attemptsMade ?? 0;
+      const failedReason = error?.message ?? 'Unknown error';
+
+      logger.error(
+        {
+          event: 'email.failed',
+          traceId,
+          jobName,
+          attemptsMade,
+          failedReason,
+          email: job?.data?.email != null ? '[redacted]' : undefined,
+        },
+        'email.failed',
+      );
+
+      try {
+        await this.dlqQueue.add(
+          'failed-mail-job',
+          {
+            originalJobId: traceId,
+            jobName,
+            failedReason,
+            attemptedAt: new Date().toISOString(),
+            dataKeys: job?.data ? Object.keys(job.data) : [],
+          },
+          { removeOnComplete: { count: 1000 } },
+        );
+      } catch (dlqErr) {
+        logger.error({ traceId, error: (dlqErr as Error).message }, 'Failed to add job to DLQ');
+      }
+    });
 
     try {
       await this.worker.waitUntilReady();

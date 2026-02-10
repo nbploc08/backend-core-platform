@@ -25,6 +25,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     BullModule.registerQueue({
       name: 'mail',
     }),
+    BullModule.registerQueue({
+      name: 'mail-dlq',
+    }),
   ],
   providers: [JobsService],
 })

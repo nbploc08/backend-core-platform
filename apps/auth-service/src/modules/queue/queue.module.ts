@@ -27,6 +27,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
     BullModule.registerQueue({
       name: 'mail',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
     }),
   ],
   providers: [QueueService],
