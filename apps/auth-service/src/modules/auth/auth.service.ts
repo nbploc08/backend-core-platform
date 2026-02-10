@@ -9,6 +9,7 @@ import {
   hashPassword,
   logger,
   ServiceError,
+  verifyPassword,
 } from '@common/core';
 import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
 import { RegisterResponseDto } from './dto/registerRes.dto';
@@ -295,6 +296,77 @@ export class AuthService {
         code: ErrorCodes.INTERNAL,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: error.message ?? 'Error creating password reset',
+      });
+    }
+  }
+  async forgotPasswordVerify(forgotPasswordVerifyDto: {
+    email: string;
+    code: string;
+  }): Promise<any> {
+    try {
+      const user = await this.usersService.findOneByEmail(forgotPasswordVerifyDto.email);
+      if (!user) {
+        throw new ServiceError({
+          code: ErrorCodes.NOT_FOUND,
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Email not found',
+        });
+      }
+      await this.usersService.verifyPasswordReset(user.id, forgotPasswordVerifyDto.code);
+      logger.info(
+        {
+          action: 'password_reset_verified',
+          userId: user.id,
+          email: user.email,
+          code: forgotPasswordVerifyDto.code,
+        },
+        'Password reset verified',
+      );
+      return { message: 'Password reset verified' };
+    } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: error.message ?? 'Error verifying password reset',
+      });
+    }
+  }
+  async forgotPasswordReset(forgotPasswordResetDto: {
+    email: string;
+    code: string;
+    password: string;
+  }): Promise<any> {
+    try {
+      const user = await this.usersService.findOneByEmail(forgotPasswordResetDto.email);
+      if (!user) {
+        throw new ServiceError({
+          code: ErrorCodes.NOT_FOUND,
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Email not found',
+        });
+      }
+      await this.usersService.resetPassword(
+        user.id,
+        forgotPasswordResetDto.password,
+        forgotPasswordResetDto.code,
+      );
+      logger.info(
+        {
+          action: 'password_reset_success',
+          userId: user.id,
+          email: user.email,
+          code: forgotPasswordResetDto.code,
+        },
+        'Password reset success',
+      );
+      return { message: 'Password reset success' };
+    } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: error.message ?? 'Error resetting password',
       });
     }
   }

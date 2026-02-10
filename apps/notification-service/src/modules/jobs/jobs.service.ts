@@ -48,7 +48,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
     // Xử lý lỗi cho Worker (Consumer)
     handleRedisError(this.worker, 'Worker');
 
-    // Xử lý lỗi cho Queue (Producer - dù có thể không dùng nhưng vẫn init connection)
+    // Xử lý lỗi cho Queue
     handleRedisError(this.queue, 'Queue');
 
     try {
@@ -85,7 +85,6 @@ export class JobsService extends WorkerHost implements OnModuleInit {
           await this.mailsService.sendVerifyCode(job.data.email, job.data.code);
           logger.info(`Send verify code to ${job.data.email}`);
         } catch (error) {
-          // Log error trước khi throw (vì interceptor không chạy cho worker)
           logger.error(
             {
               error: error.message,
@@ -106,9 +105,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
 
       case PASSWORD_RESET_REQUESTED:
         try {
-          const encryptKey = getEncryptKey();
-          const token = decrypt(job.data.token, encryptKey);
-          await this.mailsService.sendResetPassword(job.data.email, token);
+          await this.mailsService.sendResetPassword(job.data.email, job.data.token);
           logger.info(`Send reset password to ${job.data.email}`);
         } catch (error) {
           logger.error(
@@ -116,6 +113,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
               error: error.message,
               jobId: job.id,
               email: job.data.email,
+              token: job.data.token,
             },
             'Error sending reset password',
           );
