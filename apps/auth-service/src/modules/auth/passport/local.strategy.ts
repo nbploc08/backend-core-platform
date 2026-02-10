@@ -13,7 +13,11 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     const user = await this.usersService.validateUser(email, password);
     if (!user) {
       logger.warn(
-        { action: 'login_failed', email: email?.toLowerCase?.()?.trim?.(), reason: 'invalid_credentials' },
+        {
+          action: 'login_failed',
+          email: email?.toLowerCase?.()?.trim?.(),
+          reason: 'invalid_credentials',
+        },
         'Login failed',
       );
       throw new ServiceError({

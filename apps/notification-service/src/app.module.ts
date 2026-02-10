@@ -6,6 +6,7 @@ import { NatsModule } from './modules/nats/nats.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { MailsModule } from './modules/mails/mails.module';
 import { JetstreamModule } from './modules/jetstream/jetstream.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { JetstreamModule } from './modules/jetstream/jetstream.module';
     NotificationModule,
     MailsModule,
     JetstreamModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

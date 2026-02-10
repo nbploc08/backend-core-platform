@@ -1,4 +1,4 @@
-import { IsEmail, IsBoolean, IsDate, IsNotEmpty, IsString, IsEnum } from 'class-validator';
+import { IsEmail, IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class InfoUserDto {
   @IsString()

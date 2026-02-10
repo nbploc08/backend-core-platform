@@ -3,23 +3,27 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+export type InternalJwtPayload = {
+  sub: string;
+  data: {};
+};
+
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class InternalJwtStrategy extends PassportStrategy(Strategy, 'internal-jwt') {
   constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'change-me',
-      issuer: configService.get<string>('JWT_ISSUER') || 'auth-service',
-      audience: configService.get<string>('JWT_AUDIENCE') || 'api',
+      secretOrKey: configService.get<string>('INTERNAL_JWT_SECRET') || 'change-internal',
+      issuer: configService.get<string>('INTERNAL_JWT_ISSUER') || 'gateway',
+      audience: configService.get<string>('INTERNAL_JWT_AUDIENCE') || 'internal',
     });
   }
 
-  async validate(payload: { sub: string; email: string; permVersion?: number }) {
+  async validate(payload: InternalJwtPayload) {
     return {
-      userId: payload.sub,
-      email: payload.email,
-      permVersion: payload.permVersion ?? 1,
+      caller: payload.sub,
+      data: payload.data,
     };
   }
 }

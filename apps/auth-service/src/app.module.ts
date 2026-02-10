@@ -7,7 +7,8 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NatsModule } from './modules/nats/nats.module';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './modules/auth/strategy/jwt-auth.guard';
+import { InternalJwtAuthGuard } from './modules/auth/strategy/jwt-auth.guard';
+import { QueueModule } from './modules/queue/queue.module';
 
 @Module({
   imports: [
@@ -19,13 +20,14 @@ import { JwtAuthGuard } from './modules/auth/strategy/jwt-auth.guard';
     UsersModule,
     AuthModule,
     NatsModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: InternalJwtAuthGuard,
     },
   ],
 })

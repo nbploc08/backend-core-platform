@@ -71,7 +71,12 @@ function defaultCodeForStatus(status: number): ErrorCode {
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const req = ctx.getRequest<{ requestId?: string; method?: string; originalUrl?: string; url?: string }>();
+    const req = ctx.getRequest<{
+      requestId?: string;
+      method?: string;
+      originalUrl?: string;
+      url?: string;
+    }>();
     const res = ctx.getResponse();
 
     const traceId = req?.requestId;
@@ -142,7 +147,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? Array.isArray(resp.message)
             ? resp.message.join(', ')
             : String(resp.message)
-          : httpEx.message ?? 'Request failed';
+          : (httpEx.message ?? 'Request failed');
 
       body = {
         error: {
@@ -162,8 +167,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
     // 4) Unknown error — log message để debug (config/env, v.v.), response vẫn "Internal server error"
     else {
-      const errMsg =
-        exception instanceof Error ? exception.message : 'unhandled_exception';
+      const errMsg = exception instanceof Error ? exception.message : 'unhandled_exception';
       logEntry = {
         level: 'error',
         bindings: { ...baseBindings, statusCode, errorMessage: errMsg },

@@ -1,0 +1,12 @@
+ Ignore for AI indexing
+node_modules/
+dist/
+coverage/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.git/
+.idea/
+.vscode/
+**/*.spec.ts
+**/*.test.ts

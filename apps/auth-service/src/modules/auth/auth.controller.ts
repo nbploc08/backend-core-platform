@@ -16,7 +16,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
-import { Cookies, Public, User } from '@common/core';
+import { Cookies, Info, Public, User } from '@common/core';
 import type { UserInterface } from '../../entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
@@ -34,7 +34,7 @@ function verifyConfirmHtml(email: string, code: string): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Verifying...</title></head><body><p>Verifying your email...</p><form id="f" method="POST" action="/auth/register/verify"><input type="hidden" name="email" value="${e}"><input type="hidden" name="code" value="${c}"></form><script>document.getElementById('f').submit();</script></body></html>`;
 }
 
-@Controller('auth')
+@Controller('auth/internal')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -84,8 +84,8 @@ export class AuthController {
 
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  me(@User() user: UserInterface) {
-    return this.authService.info(user);
+  me(@Info('data') info: any) {
+    return this.authService.info(info.id);
   }
 
   @Post('logout-device')
@@ -103,5 +103,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logoutAll(@Res({ passthrough: true }) response: Response, @User() user: UserInterface) {
     return this.authService.logoutAll(response, user);
+  }
+
+  @Post('forgot/password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() forgotPasswordDto: { email: string }) {
+    return this.authService.forgotPassword(forgotPasswordDto);
   }
 }

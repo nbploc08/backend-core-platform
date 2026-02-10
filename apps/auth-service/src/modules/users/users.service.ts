@@ -22,6 +22,22 @@ import { InfoUserDto } from './dto/infoUser.dto';
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+  async createPasswordReset(userId: string): Promise<any> {
+    const token = Math.random().toString(36).substring(2, 15);
+    const tokenHash = await hashPassword(token);
+    const tokenHashEncrypted = encrypt(tokenHash, getEncryptKey());
+    await this.prisma.passwordReset.create({
+      data: {
+        userId: userId,
+        tokenHash: tokenHash,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+    return {
+      token: tokenHashEncrypted,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    };
+  }
   async findOneByEmail(email: string) {
     return await this.prisma.user.findFirst({
       where: { email },
@@ -33,6 +49,7 @@ export class UsersService {
     const user = await this.findOneByEmail(normalizedEmail);
     const validPassword = user ? await verifyPassword(user.passwordHash, pass) : false;
     if (user && validPassword) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit passwordHash from result
       const { passwordHash, ...result } = user;
       return result;
     }
@@ -249,6 +266,23 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { id },
     });
+  }
+
+  /**
+   * Get profile by userId (for internal endpoint)
+   */
+  async getProfileById(userId: string): Promise<InfoUserDto | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        isActive: true,
+      },
+    });
+    return user as InfoUserDto | null;
   }
 
   /**
