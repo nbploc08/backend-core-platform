@@ -6,6 +6,7 @@ import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { JwtAuthGuard } from './modules/client/auth/strategy/jwt-auth.guard';
 import { AuthClientModule } from './modules/client/auth/auth-client.module';
+import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AuthClientModule } from './modules/client/auth/auth-client.module';
     }),
 
     AuthClientModule,
+    RoleClientModule,
   ],
   controllers: [AppController],
   providers: [
