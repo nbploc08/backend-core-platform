@@ -13,12 +13,14 @@ import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { PermissionCode, RequirePermission } from '@common/core';
 
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
+  @RequirePermission(PermissionCode.ADMIN_MANAGE_ROLES)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);

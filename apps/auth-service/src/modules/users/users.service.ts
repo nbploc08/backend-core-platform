@@ -205,6 +205,7 @@ export class UsersService {
     const session = await this.prisma.refreshToken.findFirst({
       where: {
         userId: id,
+        user: { permVersion: _permVersion },
         deviceId,
         expiresAt: { gt: new Date() },
         revokedAt: null,

@@ -14,6 +14,7 @@ import {
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../../../share/strategy/jwt-auth.guard';
 import { RoleClientService } from './role-client.service';
+import { User } from '@common/core';
 
 function getRequestId(req: Request & { requestId?: string }): string {
   const rid = req.requestId ?? req.headers['x-request-id'];
@@ -29,9 +30,10 @@ export class RoleClientController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createRoleDto: { name: string; description?: string; permissionIds?: string[] },
+    @User() user: any,
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.create(createRoleDto, getRequestId(req));
+    return this.roleClient.create(createRoleDto, getRequestId(req), user);
   }
 
   @Get()

@@ -67,6 +67,7 @@ Kết quả: bảng `permissions` có 2 dòng, `roles` có 2 dòng, `role_permis
 
 1. **Qua API (cần internal JWT):**  
    Gateway hoặc tool gọi auth-service với header internal JWT:
+
    ```http
    POST /auth/internal/assign-role
    Content-Type: application/json
@@ -74,10 +75,12 @@ Kết quả: bảng `permissions` có 2 dòng, `roles` có 2 dòng, `role_permis
 
    { "userId": "<user-uuid>", "roleName": "user" }
    ```
+
    Trả về: `{ "userId": "...", "roleName": "user" }`.
 
 2. **Qua code/script:**  
    Trong app (ví dụ sau khi register), gọi:
+
    ```ts
    await this.rolesService.assignRole(newUser.id, 'user');
    ```

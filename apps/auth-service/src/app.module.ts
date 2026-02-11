@@ -10,7 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { InternalJwtAuthGuard } from './share/strategy/jwt-auth.guard';
 import { QueueModule } from './modules/queue/queue.module';
 import { RolesModule } from './modules/roles/roles.module';
-
+import { PermissionGuard, PermissionModule } from '@common/core';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,6 +23,7 @@ import { RolesModule } from './modules/roles/roles.module';
     NatsModule,
     QueueModule,
     RolesModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [
@@ -30,6 +31,10 @@ import { RolesModule } from './modules/roles/roles.module';
     {
       provide: APP_GUARD,
       useClass: InternalJwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD, // ← THÊM GUARD THỨ 2
+      useClass: PermissionGuard, // Permission check
     },
   ],
 })
