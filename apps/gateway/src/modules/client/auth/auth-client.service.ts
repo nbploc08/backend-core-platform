@@ -266,4 +266,35 @@ export class AuthClientService {
       handleAxiosError(err, 'Auth service request failed');
     }
   }
+  async forgotPasswordVerify(
+    forgotPasswordVerifyDto: { email: string; code: string },
+    requestId: string,
+  ): Promise<any> {
+    try {
+      const response = await this.client.post<any>(
+        'auth/internal/forgot/password/verify',
+        forgotPasswordVerifyDto,
+        {
+          headers: this.internalHeaders(requestId),
+        },
+      );
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Auth service request failed');
+    }
+  }
+  async forgotPasswordReset(
+    forgotPasswordResetDto: { email: string; code: string; password: string },
+    requestId: string,
+  ): Promise<any> {
+    try {
+      const response = await this.client.post<any>(
+        'auth/internal/forgot/password/reset',
+        forgotPasswordResetDto,
+      );
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Auth service request failed');
+    }
+  }
 }

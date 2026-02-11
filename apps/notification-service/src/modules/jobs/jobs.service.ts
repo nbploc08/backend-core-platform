@@ -10,6 +10,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
   constructor(
     private readonly mailsService: MailsService,
     @InjectQueue('mail') private readonly queue: Queue,
+    @InjectQueue('mail-dlq') private readonly dlqQueue: Queue,
   ) {
     super();
   }
@@ -48,8 +49,49 @@ export class JobsService extends WorkerHost implements OnModuleInit {
     // Xử lý lỗi cho Worker (Consumer)
     handleRedisError(this.worker, 'Worker');
 
-    // Xử lý lỗi cho Queue (Producer - dù có thể không dùng nhưng vẫn init connection)
+    // Xử lý lỗi cho Queue
     handleRedisError(this.queue, 'Queue');
+
+    //  Khi job fail sau N lần retry → audit log email.failed + push vào DLQ
+    this.worker.on('failed', async (job: Job | undefined, error: Error) => {
+      // Nếu job vẫn còn lượt retry thì return, để BullMQ tự handle retry
+      if (job?.opts?.attempts && job.attemptsMade < job.opts.attempts) {
+        return;
+      }
+
+      const traceId = job?.id ?? 'unknown';
+      const jobName = job?.name ?? 'unknown';
+      const attemptsMade = job?.attemptsMade ?? 0;
+      const failedReason = error?.message ?? 'Unknown error';
+
+      logger.error(
+        {
+          event: 'email.failed',
+          traceId,
+          jobName,
+          attemptsMade,
+          failedReason,
+          email: job?.data?.email != null ? '[redacted]' : undefined,
+        },
+        'email.failed',
+      );
+
+      try {
+        await this.dlqQueue.add(
+          'failed-mail-job',
+          {
+            originalJobId: traceId,
+            jobName,
+            failedReason,
+            attemptedAt: new Date().toISOString(),
+            dataKeys: job?.data ? Object.keys(job.data) : [],
+          },
+          { removeOnComplete: { count: 1000 } },
+        );
+      } catch (dlqErr) {
+        logger.error({ traceId, error: (dlqErr as Error).message }, 'Failed to add job to DLQ');
+      }
+    });
 
     try {
       await this.worker.waitUntilReady();
@@ -85,7 +127,6 @@ export class JobsService extends WorkerHost implements OnModuleInit {
           await this.mailsService.sendVerifyCode(job.data.email, job.data.code);
           logger.info(`Send verify code to ${job.data.email}`);
         } catch (error) {
-          // Log error trước khi throw (vì interceptor không chạy cho worker)
           logger.error(
             {
               error: error.message,
@@ -106,9 +147,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
 
       case PASSWORD_RESET_REQUESTED:
         try {
-          const encryptKey = getEncryptKey();
-          const token = decrypt(job.data.token, encryptKey);
-          await this.mailsService.sendResetPassword(job.data.email, token);
+          await this.mailsService.sendResetPassword(job.data.email, job.data.token);
           logger.info(`Send reset password to ${job.data.email}`);
         } catch (error) {
           logger.error(
@@ -116,6 +155,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
               error: error.message,
               jobId: job.id,
               email: job.data.email,
+              token: job.data.token,
             },
             'Error sending reset password',
           );

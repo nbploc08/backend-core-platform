@@ -110,4 +110,16 @@ export class AuthController {
   async forgotPassword(@Body() forgotPasswordDto: { email: string }) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
+  @Post('forgot/password/verify')
+  @HttpCode(HttpStatus.OK)
+  async forgotPasswordVerify(@Body() forgotPasswordVerifyDto: { email: string; code: string }) {
+    return this.authService.forgotPasswordVerify(forgotPasswordVerifyDto);
+  }
+  @Post('forgot/password/reset')
+  @HttpCode(HttpStatus.OK)
+  async forgotPasswordReset(
+    @Body() forgotPasswordResetDto: { email: string; code: string; password: string },
+  ) {
+    return this.authService.forgotPasswordReset(forgotPasswordResetDto);
+  }
 }

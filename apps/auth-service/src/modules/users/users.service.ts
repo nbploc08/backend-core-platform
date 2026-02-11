@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -293,5 +294,60 @@ export class UsersService {
     if (!user) return false;
 
     return verifyPassword(user.passwordHash, password);
+  }
+  async verifyPasswordReset(userId: string, code: string) {
+    const passwordReset = await this.prisma.passwordReset.findFirst({
+      where: { userId, expiresAt: { gt: new Date() }, used: false },
+    });
+    if (!passwordReset) {
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'expired or already used',
+      });
+    }
+
+    const verify = await verifyPassword(passwordReset.tokenHash, code);
+    if (!verify) {
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid code',
+      });
+    }
+    await this.prisma.passwordReset.update({
+      where: { id: passwordReset.id },
+      data: { used: true },
+    });
+    return true;
+  }
+  async resetPassword(userId: string, password: string, code: string) {
+    const passwordReset = await this.prisma.passwordReset.findFirst({
+      where: { userId, used: true },
+    });
+    if (!passwordReset) {
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'The code has not been verified',
+      });
+    }
+    const verify = await verifyPassword(passwordReset.tokenHash, code);
+    if (!verify) {
+      throw new ServiceError({
+        code: ErrorCodes.BAD_REQUEST,
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Invalid code',
+      });
+    }
+    const passwordHash = await hashPassword(password);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    await this.prisma.passwordReset.delete({
+      where: { id: passwordReset.id },
+    });
+    return true;
   }
 }

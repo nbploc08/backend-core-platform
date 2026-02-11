@@ -127,4 +127,23 @@ export class AuthClientController {
   ) {
     return this.authClient.forgotPassword(forgotPasswordDto, getRequestId(req));
   }
+
+  @Public()
+  @Post('forgot/password/verify')
+  @HttpCode(HttpStatus.OK)
+  async forgotPasswordVerify(
+    @Body() forgotPasswordVerifyDto: { email: string; code: string },
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.forgotPasswordVerify(forgotPasswordVerifyDto, getRequestId(req));
+  }
+  @Public()
+  @Post('forgot/password/reset')
+  @HttpCode(HttpStatus.OK)
+  async forgotPasswordReset(
+    @Body() forgotPasswordResetDto: { email: string; code: string; password: string },
+    @Req() req: Request & { requestId?: string },
+  ) {
+    return this.authClient.forgotPasswordReset(forgotPasswordResetDto, getRequestId(req));
+  }
 }

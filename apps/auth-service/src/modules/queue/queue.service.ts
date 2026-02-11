@@ -69,6 +69,12 @@ export class QueueService implements OnModuleInit {
     await this.queue.add('send-verify-code', userRegisteredEvent);
   }
   async sendResetPassword(passwordResetRequestedEvent: PasswordResetRequestedEvent) {
-    await this.queue.add(PASSWORD_RESET_REQUESTED, passwordResetRequestedEvent);
+    await this.queue.add(PASSWORD_RESET_REQUESTED, passwordResetRequestedEvent, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+    });
   }
 }
