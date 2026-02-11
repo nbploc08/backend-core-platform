@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { LocalStrategy } from './passport/local.strategy';
-import { InternalJwtStrategy } from './strategy/jwt.strategy';
+import { InternalJwtStrategy } from '../../share/strategy/jwt.strategy';
 import { QueueModule } from '../queue/queue.module';
 
 @Module({

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Cookies, Public, User } from '@common/core';
-import { JwtAuthGuard } from './strategy/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../share/strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
 
 function getRequestId(req: Request & { requestId?: string }): string {
