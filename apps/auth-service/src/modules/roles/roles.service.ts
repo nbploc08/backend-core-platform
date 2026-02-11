@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { ErrorCodes, ServiceError } from '@common/core';
 
 @Injectable()
 export class RolesService {
@@ -19,6 +20,19 @@ export class RolesService {
       },
     });
     if (dto.permissionIds?.length) {
+      const existingPermissions = await this.prisma.permission.findMany({
+        where: { id: { in: dto.permissionIds } },
+        select: { id: true },
+      });
+      const existingIds = new Set(existingPermissions.map((p) => p.id));
+      const missingIds = dto.permissionIds.filter((id) => !existingIds.has(id));
+      if (missingIds.length) {
+        throw new ServiceError({
+          message: `Some permissions do not exist: ${missingIds.join(', ')}`,
+          statusCode: 400,
+          code: ErrorCodes.NOT_FOUND,
+        });
+      }
       for (const permissionId of dto.permissionIds) {
         await this.prisma.rolePermission.upsert({
           where: {
@@ -90,7 +104,10 @@ export class RolesService {
     return { deleted: true, id };
   }
 
-  async assignRole(userId: string, roleName: string): Promise<{ userId: string; roleName: string }> {
+  async assignRole(
+    userId: string,
+    roleName: string,
+  ): Promise<{ userId: string; roleName: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -105,7 +122,10 @@ export class RolesService {
     return { userId, roleName };
   }
 
-  async unassignRole(userId: string, roleName: string): Promise<{ userId: string; roleName: string }> {
+  async unassignRole(
+    userId: string,
+    roleName: string,
+  ): Promise<{ userId: string; roleName: string }> {
     const role = await this.prisma.role.findUnique({ where: { name: roleName } });
     if (!role) throw new NotFoundException(`Role '${roleName}' not found`);
     await this.prisma.userRole.deleteMany({ where: { userId, roleId: role.id } });

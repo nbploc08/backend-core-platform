@@ -4,8 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { ConfigModule } from '@nestjs/config';
-import { JwtAuthGuard } from './modules/client/auth/strategy/jwt-auth.guard';
-import { AuthClientModule } from './modules/client/auth/auth-client.module';
+import { JwtAuthGuard } from './modules/share/strategy/jwt-auth.guard';
+import { AuthClientModule } from './modules/client/auth-service/auth/auth-client.module';
 import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
 
 @Module({
