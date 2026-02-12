@@ -15,7 +15,6 @@ export class InternalJwtStrategy extends PassportStrategy(Strategy, 'internal-jw
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('INTERNAL_JWT_SECRET') || 'change-internal',
-      issuer: configService.get<string>('INTERNAL_JWT_ISSUER') || 'gateway',
       audience: configService.get<string>('INTERNAL_JWT_AUDIENCE') || 'internal',
     });
   }

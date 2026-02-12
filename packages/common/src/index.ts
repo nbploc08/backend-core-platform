@@ -10,7 +10,13 @@ export * from './security/password.util';
 export * from './security/crypto.util';
 export * from './decorators/public.decorator';
 
-export * from './decorators/permission.decorator';
+export * from './decorators/require-permission.decorator';
 export * from './decorators/user.decorator';
 export * from './decorators/info.decorator';
 export * from './decorators/cookies.decorator';
+
+export * from './permission/permission.enum';
+export * from './permission/permission.guard';
+export * from './permission/permission.provider';
+export * from './permission/permission.cache';
+export * from './permission/permission.module';

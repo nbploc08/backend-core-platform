@@ -8,10 +8,10 @@ import {
   HttpStatus,
   Res,
   Header,
-  Request,
   UseGuards,
+  Req,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
@@ -67,7 +67,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+  async login(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(req.user, res, req);
   }
   @Post('refresh')
@@ -77,7 +77,7 @@ export class AuthController {
     @Cookies('refreshToken') refreshToken: string,
     @Cookies('deviceId') deviceId: string,
     @Res({ passthrough: true }) response: Response,
-    @Request() req,
+    @Req() req,
   ) {
     return this.authService.refresh(refreshToken, deviceId, response, req);
   }
@@ -91,6 +91,7 @@ export class AuthController {
   @Post('logout-device')
   @HttpCode(HttpStatus.OK)
   async logoutDevice(
+    @Req() req: Request,
     @Cookies('deviceId') deviceId: string,
     @Res({ passthrough: true }) response: Response,
     @User() user: UserInterface,

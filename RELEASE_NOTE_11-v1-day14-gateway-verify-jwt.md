@@ -55,18 +55,18 @@
 
 ### Backend API — Các endpoint liên quan
 
-| Service      | Method | Path                         | Mô tả                                                                 |
-| ------------ | ------ | ---------------------------- | --------------------------------------------------------------------- |
-| Gateway      | GET    | /client/auth/me              | Cần user JWT; gateway gọi auth internal với internal JWT → trả profile. |
-| Gateway      | POST   | /client/auth/login           | Public; gateway gọi auth/internal/login với internal JWT.            |
-| Gateway      | POST   | /client/auth/register        | Public; gateway gọi auth/internal/register với internal JWT.         |
-| Gateway      | POST   | /client/auth/refresh         | Public; cookie refreshToken, deviceId.                               |
-| Gateway      | POST   | /client/auth/logout-device   | Cần user JWT; logout theo device.                                    |
-| Gateway      | POST   | /client/auth/logout-all      | Cần user JWT; logout toàn bộ session.                                |
-| Gateway      | POST   | /client/auth/forgot/password | Public; gửi email reset.                                             |
-| Gateway      | POST   | /client/auth/forgot/password/verify   | Public; xác thực code.                        |
-| Gateway      | POST   | /client/auth/forgot/password/reset    | Public; đặt lại mật khẩu.                        |
-| Auth-service | *      | /auth/internal/*             | Chỉ chấp nhận Internal JWT (gateway); không chấp nhận user JWT.      |
+| Service      | Method | Path                                | Mô tả                                                                   |
+| ------------ | ------ | ----------------------------------- | ----------------------------------------------------------------------- |
+| Gateway      | GET    | /client/auth/me                     | Cần user JWT; gateway gọi auth internal với internal JWT → trả profile. |
+| Gateway      | POST   | /client/auth/login                  | Public; gateway gọi auth/internal/login với internal JWT.               |
+| Gateway      | POST   | /client/auth/register               | Public; gateway gọi auth/internal/register với internal JWT.            |
+| Gateway      | POST   | /client/auth/refresh                | Public; cookie refreshToken, deviceId.                                  |
+| Gateway      | POST   | /client/auth/logout-device          | Cần user JWT; logout theo device.                                       |
+| Gateway      | POST   | /client/auth/logout-all             | Cần user JWT; logout toàn bộ session.                                   |
+| Gateway      | POST   | /client/auth/forgot/password        | Public; gửi email reset.                                                |
+| Gateway      | POST   | /client/auth/forgot/password/verify | Public; xác thực code.                                                  |
+| Gateway      | POST   | /client/auth/forgot/password/reset  | Public; đặt lại mật khẩu.                                               |
+| Auth-service | \*     | /auth/internal/\*                   | Chỉ chấp nhận Internal JWT (gateway); không chấp nhận user JWT.         |
 
 ## Migration
 

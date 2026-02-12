@@ -34,10 +34,14 @@ export class RoleClientService {
   async create(
     createRoleDto: { name: string; description?: string; permissionIds?: string[] },
     requestId: string,
+    user: any,
   ): Promise<any> {
     try {
       const response = await this.client.post('roles', createRoleDto, {
-        headers: this.internalHeaders(requestId),
+        headers: this.internalHeaders(requestId, {
+          id: user.userId,
+          permVersion: user.permVersion,
+        }),
       });
       if (response.status >= 400) {
         handleAxiosError(

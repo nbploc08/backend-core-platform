@@ -9,7 +9,6 @@ import {
   hashPassword,
   logger,
   ServiceError,
-  verifyPassword,
 } from '@common/core';
 import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
 import { RegisterResponseDto } from './dto/registerRes.dto';
@@ -90,6 +89,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      permVersion: user.permVersion,
       access_token: accessToken,
     } as loginResponseDto;
   }
@@ -135,30 +135,27 @@ export class AuthService {
     }
   }
 
-  async login(user: UserInterface, response: any, req: any): Promise<loginResponseDto> {
-    const emailForLog = user?.email;
+  async login(userReq: UserInterface, response: any, req: any): Promise<loginResponseDto> {
     try {
       const dataDevice = await this.getDeviceData(req);
       const deviceId = randomUUID();
-      const isActive = await this.usersService.checkActive(user.email);
-      if (!isActive) {
-        logger.warn(
-          { action: 'login_failed', email: emailForLog, reason: 'account_not_verified' },
-          'Login failed',
-        );
-        throw new ServiceError({
-          code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
-          statusCode: 401,
-          message: 'Account not verified. Please verify your email.',
-        });
-      }
+      const user = await this.usersService.checkActiveEmail(userReq.email);
+
       const result = await this.issueTokens(user, response, dataDevice, deviceId);
-      logger.info({ action: 'login_success', userId: user.id, email: user.email }, 'Login success');
+      logger.info(
+        {
+          action: 'login_success',
+          userId: user.id,
+          email: user.email,
+          permVersion: user.permVersion,
+        },
+        'Login success',
+      );
       return result as loginResponseDto;
     } catch (error) {
       if (error instanceof ServiceError) throw error;
       logger.warn(
-        { action: 'login_failed', email: emailForLog, reason: (error as Error)?.message },
+        { action: 'login_failed', email: userReq.email, reason: (error as Error)?.message },
         'Login failed',
       );
       throw new ServiceError({

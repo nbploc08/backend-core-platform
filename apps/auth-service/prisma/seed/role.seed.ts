@@ -60,6 +60,8 @@ export async function runRoleSeed(prisma: PrismaClient) {
     create: { roleId: roleAdmin.id, permissionId: permWrite.id },
   });
 
-  console.log('Role seed OK: permissions notifications:read, notifications:write; roles user, admin.');
+  console.log(
+    'Role seed OK: permissions notifications:read, notifications:write; roles user, admin.',
+  );
   return { roleUser, roleAdmin };
 }

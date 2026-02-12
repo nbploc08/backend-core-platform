@@ -12,6 +12,7 @@ import {
   ErrorCodes,
   getEncryptKey,
   hashPassword,
+  logger,
   ServiceError,
   verifyPassword,
 } from '@common/core';
@@ -56,12 +57,22 @@ export class UsersService {
     }
     return null;
   }
-  async checkActive(email: string) {
-    const result = await this.prisma.user.findFirst({
-      where: { email },
-      select: { isActive: true },
+  async checkActiveEmail(email: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { email, isActive: true },
     });
-    return result?.isActive ?? false;
+    if (!user) {
+      logger.warn(
+        { action: 'login_failed', email: email, reason: 'account_not_verified or not_found' },
+        'Login failed',
+      );
+      throw new ServiceError({
+        code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
+        statusCode: 401,
+        message: 'account_not_verified or not_found.',
+      });
+    }
+    return user;
   }
   async createOrUpdateEmailOtp(userId: string, codeHash: string): Promise<any> {
     return await this.prisma.emailOtp.upsert({
@@ -194,6 +205,7 @@ export class UsersService {
     const session = await this.prisma.refreshToken.findFirst({
       where: {
         userId: id,
+        user: { permVersion: _permVersion },
         deviceId,
         expiresAt: { gt: new Date() },
         revokedAt: null,

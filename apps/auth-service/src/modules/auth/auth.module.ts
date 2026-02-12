@@ -21,7 +21,7 @@ import { QueueModule } from '../queue/queue.module';
       useFactory: async (configService: ConfigService): Promise<JwtModuleOptions> => ({
         secret: configService.get<string>('JWT_SECRET') || 'change-me',
         signOptions: {
-          expiresIn: configService.get<number>('JWT_EXPIRES_IN') || 900,
+          expiresIn: configService.get<number>('JWT_EXPIRES_IN') || 9000,
           issuer: configService.get<string>('JWT_ISSUER') || 'auth-service',
           audience: configService.get<string>('JWT_AUDIENCE') || 'api',
         },

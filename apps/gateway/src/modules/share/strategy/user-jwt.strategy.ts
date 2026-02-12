@@ -15,11 +15,11 @@ export class UserJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: { sub: string; email?: string; permVersion?: number }) {
+  async validate(payload: { sub: string; email: string; permVersion: number }) {
     return {
       userId: payload.sub,
       email: payload.email,
-      permVersion: payload.permVersion ?? 1,
+      permVersion: payload.permVersion,
     };
   }
 }
