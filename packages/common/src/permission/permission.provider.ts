@@ -49,7 +49,7 @@ export class PermissionProvider {
     authServiceUrl?: string,
   ): Promise<string[]> {
     // 1. Check cache first
-    const cached = await this.cache.get(userId, permVersion);
+    const cached = await this.cache.get(userId);
     if (cached?.length > 0) {
       this.logger.debug(`Cache hit for user ${userId}, permVersion ${permVersion}`);
       return cached;

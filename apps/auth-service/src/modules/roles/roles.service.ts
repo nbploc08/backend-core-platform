@@ -2,11 +2,14 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { ErrorCodes, ServiceError } from '@common/core';
+import { ErrorCodes, PermissionCache, ServiceError } from '@common/core';
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permissionCache: PermissionCache,
+  ) {}
 
   async create(dto: CreateRoleDto) {
     const existing = await this.prisma.role.findUnique({ where: { name: dto.name } });
@@ -108,28 +111,95 @@ export class RolesService {
     userId: string,
     roleName: string,
   ): Promise<{ userId: string; roleName: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
 
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) throw new NotFoundException(`Role '${roleName}' not found`);
+      const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+      if (!role) throw new NotFoundException(`Role '${roleName}' not found`);
 
-    await this.prisma.userRole.upsert({
-      where: { userId_roleId: { userId, roleId: role.id } },
-      update: {},
-      create: { userId, roleId: role.id },
-    });
-    return { userId, roleName };
+      const veriUserRole = await this.prisma.userRole.findUnique({
+        where: { userId_roleId: { userId, roleId: role.id } },
+      });
+      if (veriUserRole) {
+        throw new ServiceError({
+          message: `User already has role '${roleName}'`,
+          statusCode: 400,
+          code: ErrorCodes.CONFLICT,
+        });
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userRole.upsert({
+          where: { userId_roleId: { userId, roleId: role.id } },
+          update: {},
+          create: { userId, roleId: role.id },
+        });
+        await tx.user.update({
+          where: { id: userId },
+          data: { permVersion: user.permVersion + 1, updatedAt: new Date() },
+        });
+        await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
+      });
+      return { userId, roleName };
+    } catch (error) {
+      throw new ServiceError({
+        message: error.message || 'Failed to assign role',
+        statusCode: error.statusCode || 500,
+        code: ErrorCodes.INTERNAL,
+      });
+    }
   }
 
   async unassignRole(
     userId: string,
     roleName: string,
   ): Promise<{ userId: string; roleName: string }> {
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) throw new NotFoundException(`Role '${roleName}' not found`);
-    await this.prisma.userRole.deleteMany({ where: { userId, roleId: role.id } });
-    return { userId, roleName };
+    try {
+      const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+      if (!role) {
+        throw new ServiceError({
+          message: 'Role not found',
+          statusCode: 404,
+          code: ErrorCodes.NOT_FOUND,
+        });
+      }
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new ServiceError({
+          message: 'User not found',
+          statusCode: 404,
+          code: ErrorCodes.NOT_FOUND,
+        });
+      }
+      const userRole = await this.prisma.userRole.findUnique({
+        where: { userId_roleId: { userId, roleId: role.id } },
+      });
+      if (!userRole) {
+        throw new ServiceError({
+          message: `User does not have role '${roleName}'`,
+          statusCode: 400,
+          code: ErrorCodes.NOT_FOUND,
+        });
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userRole.deleteMany({ where: { userId, roleId: role.id } });
+        await tx.user.update({
+          where: { id: userId },
+          data: { permVersion: user.permVersion + 1, updatedAt: new Date() },
+        });
+        await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
+      });
+      await this.prisma.userRole.deleteMany({ where: { userId, roleId: role.id } });
+      return { userId, roleName };
+    } catch (error) {
+      throw new ServiceError({
+        message: error.message || 'Failed to unassign role',
+        statusCode: error.statusCode || 500,
+        code: ErrorCodes.INTERNAL,
+      });
+    }
   }
 
   async getPermissionCodesForUser(userId: string): Promise<string[]> {

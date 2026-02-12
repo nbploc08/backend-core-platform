@@ -33,7 +33,7 @@ import { PermissionGuard, PermissionModule } from '@common/core';
       useClass: InternalJwtAuthGuard,
     },
     {
-      provide: APP_GUARD, // ← THÊM GUARD THỨ 2
+      provide: APP_GUARD, //
       useClass: PermissionGuard, // Permission check
     },
   ],
