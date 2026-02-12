@@ -97,7 +97,6 @@ export class AuthController {
     @User() user: UserInterface,
     @Cookies('refreshToken') refreshToken: string,
   ) {
-    const test = req.user;
     return this.authService.logoutDevice(deviceId, response, user, refreshToken);
   }
 

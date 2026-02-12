@@ -98,7 +98,7 @@ export class PermissionProvider {
       );
 
       // 3. Cache the result
-      this.cache.set(userId, permVersion, permissions);
+      await this.cache.set(userId, permVersion, permissions);
 
       return permissions;
     } catch (error) {
@@ -155,8 +155,8 @@ export class PermissionProvider {
     return hasAnyPermission;
   }
 
-  invalidateUserCache(userId: string) {
+  async invalidateUserCache(userId: string) {
     this.logger.debug(`Invalidating cache for user ${userId}`);
-    this.cache.invalidate(userId);
+    await this.cache.invalidate(userId);
   }
 }

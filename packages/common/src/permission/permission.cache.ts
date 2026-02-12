@@ -5,7 +5,6 @@ import Redis from 'ioredis';
 @Injectable()
 export class PermissionCache {
   private redis: Redis;
-  private readonly CACHE_TTL = 5 * 60; // 5 minutes in seconds
 
   constructor(private configService: ConfigService) {
     const redisUrl = this.configService.get<string>('REDIS_URL');

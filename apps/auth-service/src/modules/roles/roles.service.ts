@@ -139,14 +139,14 @@ export class RolesService {
           where: { id: userId },
           data: { permVersion: user.permVersion + 1, updatedAt: new Date() },
         });
-        await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
       });
+      await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
       return { userId, roleName };
     } catch (error) {
       throw new ServiceError({
         message: error.message || 'Failed to assign role',
         statusCode: error.statusCode || 500,
-        code: ErrorCodes.INTERNAL,
+        code: error.code || ErrorCodes.INTERNAL,
       });
     }
   }
@@ -189,9 +189,8 @@ export class RolesService {
           where: { id: userId },
           data: { permVersion: user.permVersion + 1, updatedAt: new Date() },
         });
-        await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
       });
-      await this.prisma.userRole.deleteMany({ where: { userId, roleId: role.id } });
+      await this.permissionCache.updatePermVersion(userId, user.permVersion + 1);
       return { userId, roleName };
     } catch (error) {
       throw new ServiceError({

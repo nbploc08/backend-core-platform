@@ -9,7 +9,6 @@ import {
   hashPassword,
   logger,
   ServiceError,
-  verifyPassword,
 } from '@common/core';
 import { USER_REGISTERED, UserRegisteredSchema } from '@contracts/core';
 import { RegisterResponseDto } from './dto/registerRes.dto';
