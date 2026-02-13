@@ -5,13 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import axios, { AxiosInstance } from 'axios';
 import { handleAxiosError } from '@common/core';
-export type ProfileResponse = {
-  id: string;
-  email: string;
-  name: string;
-  phone: string;
-  isActive: boolean;
-};
 
 @Injectable()
 export class NotificationService {
@@ -31,44 +24,93 @@ export class NotificationService {
     });
   }
 
-  private internalHeaders(requestId: string, payload?: object) {
-    const token = this.internalJwt.signInternalToken(payload ?? {});
-    return {
-      Authorization: `Bearer ${token}`,
+  private getHeaders(requestId: string, userToken?: string, internalData?: object) {
+    const headers: Record<string, string> = {
       'x-request-id': requestId,
     };
+    if (userToken) {
+      headers['Authorization'] = userToken;
+    } else {
+      const token = this.internalJwt.signInternalToken(internalData ?? {});
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
-  async getProfileByUserId(userId: string, requestId: string): Promise<ProfileResponse> {
+  async ping(): Promise<any> {
     try {
-      const response = await this.client.get<ProfileResponse>('auth/internal/me', {
-        headers: this.internalHeaders(requestId, { id: userId }),
+      const response = await this.client.get<any>('health', {
+        headers: this.getHeaders('health-check'),
       });
       if (response.status >= 400) {
         handleAxiosError(
           { response: { status: response.status, data: response.data } },
-          'Auth service request failed',
+          'Notification service request failed',
         );
       }
       return response.data;
     } catch (err: unknown) {
-      handleAxiosError(err, 'Auth service request failed');
+      handleAxiosError(err, 'Notification service request failed');
     }
   }
-  async ping(): Promise<any> {
+
+  async create(createNotificationDto: CreateNotificationDto, authToken: string, requestId: string) {
     try {
-      const response = await this.client.get<any>('health', {
-        headers: this.internalHeaders('health-check'), // ← THÊM headers
+      const response = await this.client.post('notifications', createNotificationDto, {
+        headers: this.getHeaders(requestId, authToken),
       });
-      if (response.status >= 400) {
-        handleAxiosError(
-          { response: { status: response.status, data: response.data } },
-          'Auth service request failed',
-        );
-      }
-      return response;
+      return response.data;
     } catch (err: unknown) {
-      handleAxiosError(err, 'Auth service request failed');
+      handleAxiosError(err, 'Notification service request failed');
+    }
+  }
+
+  async findAll(authToken: string, requestId: string) {
+    try {
+      const response = await this.client.get('notifications', {
+        headers: this.getHeaders(requestId, authToken),
+      });
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Notification service request failed');
+    }
+  }
+
+  async findOne(id: string, authToken: string, requestId: string) {
+    try {
+      const response = await this.client.get(`notifications/${id}`, {
+        headers: this.getHeaders(requestId, authToken),
+      });
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Notification service request failed');
+    }
+  }
+
+  async update(
+    id: string,
+    updateNotificationDto: UpdateNotificationDto,
+    authToken: string,
+    requestId: string,
+  ) {
+    try {
+      const response = await this.client.patch(`notifications/${id}`, updateNotificationDto, {
+        headers: this.getHeaders(requestId, authToken),
+      });
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Notification service request failed');
+    }
+  }
+
+  async remove(id: string, authToken: string, requestId: string) {
+    try {
+      const response = await this.client.delete(`notifications/${id}`, {
+        headers: this.getHeaders(requestId, authToken),
+      });
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Notification service request failed');
     }
   }
 }

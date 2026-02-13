@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { Response } from 'express';
+
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { handleAxiosError } from '@common/core';
 
@@ -45,18 +46,27 @@ export class AuthClientService {
     });
   }
 
-  private internalHeaders(requestId: string, payload?: object) {
-    const token = this.internalJwt.signInternalToken(payload ?? {});
-    return {
-      Authorization: `Bearer ${token}`,
+  private getHeaders(requestId: string, token?: string) {
+    const headers: Record<string, string> = {
       'x-request-id': requestId,
     };
+    if (token) {
+      headers['Authorization'] = token;
+    } else {
+      const internalToken = this.internalJwt.signInternalToken({});
+      headers['Authorization'] = `Bearer ${internalToken}`;
+    }
+    return headers;
   }
 
-  async getProfileByUserId(userId: string, requestId: string): Promise<ProfileResponse> {
+  async getProfileByUserId(
+    userId: string,
+    requestId: string,
+    token?: string,
+  ): Promise<ProfileResponse> {
     try {
       const response = await this.client.get<ProfileResponse>('auth/internal/me', {
-        headers: this.internalHeaders(requestId, { id: userId }),
+        headers: this.getHeaders(requestId, token),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -75,13 +85,9 @@ export class AuthClientService {
     requestId: string,
     clientRes?: Response,
   ): Promise<LoginResponse> {
-    const token = this.internalJwt.signInternalToken(loginDto);
     try {
       const response = await this.client.post<LoginResponse>('auth/internal/login', loginDto, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'x-request-id': requestId,
-        },
+        headers: this.getHeaders(requestId),
         maxRedirects: 0,
       });
       if (response.status >= 400) {
@@ -98,13 +104,9 @@ export class AuthClientService {
   }
 
   async register(registerDto: Record<string, unknown>, requestId: string): Promise<any> {
-    const token = this.internalJwt.signInternalToken(registerDto);
     try {
       const response = await this.client.post('auth/internal/register', registerDto, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'x-request-id': requestId,
-        },
+        headers: this.getHeaders(requestId),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -119,13 +121,9 @@ export class AuthClientService {
   }
 
   async verify(verifyDto: { email: string; code: string }, requestId: string): Promise<any> {
-    const token = this.internalJwt.signInternalToken(verifyDto);
     try {
       const response = await this.client.post('auth/internal/register/verify', verifyDto, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'x-request-id': requestId,
-        },
+        headers: this.getHeaders(requestId),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -149,7 +147,7 @@ export class AuthClientService {
         'auth/internal/resend-code',
         { email },
         {
-          headers: this.internalHeaders(requestId),
+          headers: this.getHeaders(requestId),
         },
       );
       if (response.status >= 400) {
@@ -176,7 +174,7 @@ export class AuthClientService {
         {},
         {
           headers: {
-            ...this.internalHeaders(requestId),
+            ...this.getHeaders(requestId),
             Cookie: `refreshToken=${refreshToken}; deviceId=${deviceId}`,
           },
         },
@@ -200,6 +198,7 @@ export class AuthClientService {
     userId: string,
     requestId: string,
     clientRes?: Response,
+    token?: string,
   ): Promise<string> {
     try {
       const response = await this.client.post<string>(
@@ -207,7 +206,7 @@ export class AuthClientService {
         {},
         {
           headers: {
-            ...this.internalHeaders(requestId, { id: userId }),
+            ...this.getHeaders(requestId, token),
             Cookie: `refreshToken=${refreshToken}; deviceId=${deviceId}`,
           },
         },
@@ -228,13 +227,18 @@ export class AuthClientService {
     }
   }
 
-  async logoutAll(userId: string, requestId: string, clientRes?: Response): Promise<string> {
+  async logoutAll(
+    userId: string,
+    requestId: string,
+    clientRes?: Response,
+    token?: string,
+  ): Promise<string> {
     try {
       const response = await this.client.post<string>(
         'auth/internal/logout-all',
         {},
         {
-          headers: this.internalHeaders(requestId, { id: userId }),
+          headers: this.getHeaders(requestId, token),
         },
       );
       if (response.status >= 400) {
@@ -258,7 +262,7 @@ export class AuthClientService {
         'auth/internal/forgot/password',
         forgotPasswordDto,
         {
-          headers: this.internalHeaders(requestId),
+          headers: this.getHeaders(requestId),
         },
       );
       return response.data;
@@ -275,7 +279,7 @@ export class AuthClientService {
         'auth/internal/forgot/password/verify',
         forgotPasswordVerifyDto,
         {
-          headers: this.internalHeaders(requestId),
+          headers: this.getHeaders(requestId),
         },
       );
       return response.data;
