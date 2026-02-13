@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { JwtAuthGuard } from '../../../share/strategy/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { RoleClientService } from './role-client.service';
 import { User } from '@common/core';
 

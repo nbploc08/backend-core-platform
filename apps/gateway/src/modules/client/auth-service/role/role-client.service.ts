@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
-import { InternalJwtService } from '../../../share/internal-jwt/internal-jwt.service';
+import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { handleAxiosError } from '@common/core';
 
 @Injectable()

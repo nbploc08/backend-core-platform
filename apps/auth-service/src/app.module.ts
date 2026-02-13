@@ -7,7 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NatsModule } from './modules/nats/nats.module';
 import { APP_GUARD } from '@nestjs/core';
-import { InternalJwtAuthGuard } from './share/strategy/jwt-auth.guard';
+import { InternalJwtAuthGuard } from './modules/internal/internal-strategy/jwt-auth.guard';
 import { QueueModule } from './modules/queue/queue.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionGuard, PermissionModule } from '@common/core';

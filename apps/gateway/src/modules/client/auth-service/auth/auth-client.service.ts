@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { Response } from 'express';
-import { InternalJwtService } from '../../../share/internal-jwt/internal-jwt.service';
+import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { handleAxiosError } from '@common/core';
 
 export type ProfileResponse = {
