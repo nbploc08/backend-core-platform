@@ -24,10 +24,15 @@ export class PermissionCache {
     });
   }
 
-  async get(userId: string): Promise<string[]> {
+  async get(userId: string, permVersion: number): Promise<string[]> {
     const key = this.cacheKey(userId);
     const cached = await this.redis.hgetall(key);
-    if (!cached || Object.keys(cached).length === 0) {
+
+    if (
+      !cached ||
+      Object.keys(cached).length === 0 ||
+      cached.permVersion !== permVersion.toString()
+    ) {
       return [];
     }
 
