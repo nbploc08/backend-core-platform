@@ -9,8 +9,8 @@ import { JetstreamModule } from './modules/jetstream/jetstream.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { APP_GUARD } from '@nestjs/core';
 import { PermissionModule, PermissionGuard } from '@common/core';
-import { InternalJwtAuthGuard } from './modules/internal/internal-strategy/jwt-auth.guard';
-import { InternalJwtModule } from './modules/internal/internal-jwt.module';
+import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
+import { JwtModule } from './modules/jwt/jwt.module';
 
 @Module({
   imports: [
@@ -23,14 +23,14 @@ import { InternalJwtModule } from './modules/internal/internal-jwt.module';
     MailsModule,
     JetstreamModule,
     JobsModule,
-    InternalJwtModule,
+    JwtModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: InternalJwtAuthGuard,
+      useClass: CombinedJwtAuthGuard,
     },
   ],
 })
