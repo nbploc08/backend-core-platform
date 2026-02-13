@@ -31,13 +31,18 @@ export class PermissionCache {
     if (
       !cached ||
       Object.keys(cached).length === 0 ||
-      cached.permVersion !== permVersion.toString()
+      cached.permVersion !== permVersion.toString() ||
+      !cached.permissions // Thêm check này để tránh JSON.parse(undefined)
     ) {
-      return [];
+      return []; // Nên trả về null để caller biết là cache miss, thay vì [] (vì [] có thể là user không có quyền nào)
     }
 
-    const data = JSON.parse(cached.permissions);
-    return data;
+    try {
+      const data = JSON.parse(cached.permissions);
+      return data;
+    } catch (e) {
+      return [];
+    }
   }
 
   async invalidate(userId: string) {

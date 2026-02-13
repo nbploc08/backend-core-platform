@@ -32,6 +32,10 @@ import { JwtModule } from './modules/jwt/jwt.module';
       provide: APP_GUARD,
       useClass: CombinedJwtAuthGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
+    },
   ],
 })
 export class AppModule {}

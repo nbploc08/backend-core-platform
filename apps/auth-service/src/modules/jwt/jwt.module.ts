@@ -18,4 +18,4 @@ import { InternalJwtAuthGuard, CombinedJwtAuthGuard } from './strategy/jwt-auth.
   ],
   exports: [InternalJwtService, InternalJwtAuthGuard, CombinedJwtAuthGuard],
 })
-export class InternalJwtModule {}
+export class JwtModule {}
