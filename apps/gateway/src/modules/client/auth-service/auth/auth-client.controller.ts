@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Cookies, Public, User } from '@common/core';
-import { JwtAuthGuard } from '../../../share/strategy/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
 
 function getRequestId(req: Request & { requestId?: string }): string {
@@ -27,7 +27,11 @@ export class AuthClientController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async me(@User() user: { userId: string }, @Req() req: Request & { requestId?: string }) {
-    return this.authClient.getProfileByUserId(user.userId, getRequestId(req));
+    return this.authClient.getProfileByUserId(
+      user.userId,
+      getRequestId(req),
+      req.headers.authorization,
+    );
   }
 
   @Public()
@@ -105,6 +109,7 @@ export class AuthClientController {
       user.userId,
       getRequestId(req),
       res,
+      req.headers.authorization,
     );
   }
 
@@ -115,7 +120,12 @@ export class AuthClientController {
     @Req() req: Request & { requestId?: string },
     @Res({ passthrough: true }) res?: Response,
   ) {
-    return this.authClient.logoutAll(user.userId, getRequestId(req), res);
+    return this.authClient.logoutAll(
+      user.userId,
+      getRequestId(req),
+      res,
+      req.headers.authorization,
+    );
   }
 
   @Public()

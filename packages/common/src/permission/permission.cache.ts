@@ -24,15 +24,25 @@ export class PermissionCache {
     });
   }
 
-  async get(userId: string): Promise<string[]> {
+  async get(userId: string, permVersion: number): Promise<string[]> {
     const key = this.cacheKey(userId);
     const cached = await this.redis.hgetall(key);
-    if (!cached || Object.keys(cached).length === 0) {
-      return [];
+
+    if (
+      !cached ||
+      Object.keys(cached).length === 0 ||
+      cached.permVersion !== permVersion.toString() ||
+      !cached.permissions // Thêm check này để tránh JSON.parse(undefined)
+    ) {
+      return []; // Nên trả về null để caller biết là cache miss, thay vì [] (vì [] có thể là user không có quyền nào)
     }
 
-    const data = JSON.parse(cached.permissions);
-    return data;
+    try {
+      const data = JSON.parse(cached.permissions);
+      return data;
+    } catch (e) {
+      return [];
+    }
   }
 
   async invalidate(userId: string) {

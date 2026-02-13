@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
-import { InternalJwtService } from '../../../share/internal-jwt/internal-jwt.service';
+import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { handleAxiosError } from '@common/core';
 
 @Injectable()
@@ -23,8 +23,14 @@ export class RoleClientService {
     });
   }
 
-  private internalHeaders(requestId: string, payload?: object) {
-    const token = this.internalJwt.signInternalToken(payload ?? {});
+  private getHeaders(requestId: string, authToken?: string) {
+    if (authToken) {
+      return {
+        Authorization: authToken,
+        'x-request-id': requestId,
+      };
+    }
+    const token = this.internalJwt.signInternalToken({});
     return {
       Authorization: `Bearer ${token}`,
       'x-request-id': requestId,
@@ -34,14 +40,11 @@ export class RoleClientService {
   async create(
     createRoleDto: { name: string; description?: string; permissionIds?: string[] },
     requestId: string,
-    user: any,
+    authToken?: string,
   ): Promise<any> {
     try {
       const response = await this.client.post('roles', createRoleDto, {
-        headers: this.internalHeaders(requestId, {
-          id: user.userId,
-          permVersion: user.permVersion,
-        }),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -55,10 +58,10 @@ export class RoleClientService {
     }
   }
 
-  async findAll(requestId: string): Promise<any> {
+  async findAll(requestId: string, authToken?: string): Promise<any> {
     try {
       const response = await this.client.get('roles', {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -72,10 +75,10 @@ export class RoleClientService {
     }
   }
 
-  async findOne(id: string, requestId: string): Promise<any> {
+  async findOne(id: string, requestId: string, authToken?: string): Promise<any> {
     try {
       const response = await this.client.get(`roles/${id}`, {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -93,10 +96,11 @@ export class RoleClientService {
     id: string,
     updateRoleDto: { name?: string; description?: string; permissionIds?: string[] },
     requestId: string,
+    authToken?: string,
   ): Promise<any> {
     try {
       const response = await this.client.patch(`roles/${id}`, updateRoleDto, {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -110,10 +114,10 @@ export class RoleClientService {
     }
   }
 
-  async remove(id: string, requestId: string): Promise<any> {
+  async remove(id: string, requestId: string, authToken?: string): Promise<any> {
     try {
       const response = await this.client.delete(`roles/${id}`, {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -127,10 +131,10 @@ export class RoleClientService {
     }
   }
 
-  async getRolesForUser(userId: string, requestId: string): Promise<any> {
+  async getRolesForUser(userId: string, requestId: string, authToken?: string): Promise<any> {
     try {
       const response = await this.client.get(`roles/users/${userId}/roles`, {
-        headers: this.internalHeaders(requestId, { id: userId }),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -144,10 +148,10 @@ export class RoleClientService {
     }
   }
 
-  async getPermissionsForUser(userId: string, requestId: string): Promise<any> {
+  async getPermissionsForUser(userId: string, requestId: string, authToken?: string): Promise<any> {
     try {
       const response = await this.client.get(`roles/users/${userId}/permissions`, {
-        headers: this.internalHeaders(requestId, { id: userId }),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -161,10 +165,14 @@ export class RoleClientService {
     }
   }
 
-  async assignRole(dto: { userId: string; roleName: string }, requestId: string): Promise<any> {
+  async assignRole(
+    dto: { userId: string; roleName: string },
+    requestId: string,
+    authToken?: string,
+  ): Promise<any> {
     try {
       const response = await this.client.post('roles/assign-role', dto, {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(
@@ -178,10 +186,14 @@ export class RoleClientService {
     }
   }
 
-  async unassignRole(dto: { userId: string; roleName: string }, requestId: string): Promise<any> {
+  async unassignRole(
+    dto: { userId: string; roleName: string },
+    requestId: string,
+    authToken?: string,
+  ): Promise<any> {
     try {
       const response = await this.client.post('roles/unassign-role', dto, {
-        headers: this.internalHeaders(requestId),
+        headers: this.getHeaders(requestId, authToken),
       });
       if (response.status >= 400) {
         handleAxiosError(

@@ -12,10 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { JwtAuthGuard } from '../../../share/strategy/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { RoleClientService } from './role-client.service';
-import { User } from '@common/core';
-
 function getRequestId(req: Request & { requestId?: string }): string {
   const rid = req.requestId ?? req.headers['x-request-id'];
   return Array.isArray(rid) ? (rid[0] ?? '') : (rid ?? '');
@@ -30,16 +28,15 @@ export class RoleClientController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createRoleDto: { name: string; description?: string; permissionIds?: string[] },
-    @User() user: any,
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.create(createRoleDto, getRequestId(req), user);
+    return this.roleClient.create(createRoleDto, getRequestId(req), req.headers.authorization);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: Request & { requestId?: string }) {
-    return this.roleClient.findAll(getRequestId(req));
+    return this.roleClient.findAll(getRequestId(req), req.headers.authorization);
   }
 
   @Get('users/:userId/roles')
@@ -48,7 +45,7 @@ export class RoleClientController {
     @Param('userId') userId: string,
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.getRolesForUser(userId, getRequestId(req));
+    return this.roleClient.getRolesForUser(userId, getRequestId(req), req.headers.authorization);
   }
 
   @Get('users/:userId/permissions')
@@ -57,13 +54,17 @@ export class RoleClientController {
     @Param('userId') userId: string,
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.getPermissionsForUser(userId, getRequestId(req));
+    return this.roleClient.getPermissionsForUser(
+      userId,
+      getRequestId(req),
+      req.headers.authorization,
+    );
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id') id: string, @Req() req: Request & { requestId?: string }) {
-    return this.roleClient.findOne(id, getRequestId(req));
+    return this.roleClient.findOne(id, getRequestId(req), req.headers.authorization);
   }
 
   @Patch(':id')
@@ -73,13 +74,13 @@ export class RoleClientController {
     @Body() updateRoleDto: { name?: string; description?: string; permissionIds?: string[] },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.update(id, updateRoleDto, getRequestId(req));
+    return this.roleClient.update(id, updateRoleDto, getRequestId(req), req.headers.authorization);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async remove(@Param('id') id: string, @Req() req: Request & { requestId?: string }) {
-    return this.roleClient.remove(id, getRequestId(req));
+    return this.roleClient.remove(id, getRequestId(req), req.headers.authorization);
   }
 
   @Post('assign-role')
@@ -88,7 +89,7 @@ export class RoleClientController {
     @Body() dto: { userId: string; roleName: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.assignRole(dto, getRequestId(req));
+    return this.roleClient.assignRole(dto, getRequestId(req), req.headers.authorization);
   }
 
   @Post('unassign-role')
@@ -97,6 +98,6 @@ export class RoleClientController {
     @Body() dto: { userId: string; roleName: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.roleClient.unassignRole(dto, getRequestId(req));
+    return this.roleClient.unassignRole(dto, getRequestId(req), req.headers.authorization);
   }
 }

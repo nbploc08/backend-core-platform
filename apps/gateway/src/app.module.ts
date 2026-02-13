@@ -4,9 +4,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { ConfigModule } from '@nestjs/config';
-import { JwtAuthGuard } from './modules/share/strategy/jwt-auth.guard';
+import { JwtAuthGuard } from './modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientModule } from './modules/client/auth-service/auth/auth-client.module';
 import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
+import { NotificationModule } from './modules/client/notification-service/notification/notification.module';
+import { PermissionGuard, PermissionModule } from '@common/core';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { RoleClientModule } from './modules/client/auth-service/role/role-client
 
     AuthClientModule,
     RoleClientModule,
+    NotificationModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [
@@ -24,6 +28,10 @@ import { RoleClientModule } from './modules/client/auth-service/role/role-client
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD, //
+      useClass: PermissionGuard, // Permission check
     },
   ],
 })

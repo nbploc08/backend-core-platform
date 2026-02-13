@@ -7,7 +7,8 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NatsModule } from './modules/nats/nats.module';
 import { APP_GUARD } from '@nestjs/core';
-import { InternalJwtAuthGuard } from './share/strategy/jwt-auth.guard';
+import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
+import { JwtModule } from './modules/jwt/jwt.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionGuard, PermissionModule } from '@common/core';
@@ -24,13 +25,14 @@ import { PermissionGuard, PermissionModule } from '@common/core';
     QueueModule,
     RolesModule,
     PermissionModule,
+    JwtModule, // Đăng ký CombinedJwtStrategy và InternalJwtStrategy
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: InternalJwtAuthGuard,
+      useClass: CombinedJwtAuthGuard,
     },
     {
       provide: APP_GUARD, //

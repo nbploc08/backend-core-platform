@@ -32,22 +32,31 @@ export class PermissionGuard implements CanActivate {
 
     // 3. Get user from request
     const request = context.switchToHttp().getRequest();
-    const userId = request.user?.data?.id;
-    const permVersion = request.user?.data?.permVersion;
-    const requestId = request.headers['x-request-id'];
 
-    if (!userId || !permVersion) {
-      throw new ForbiddenException('Missing user context headers');
+    // 4. Check token type - Skip permission check for Internal JWT (trusted service-to-service)
+    const tokenType = request.user?.type;
+    if (tokenType === 'internal') {
+      // Internal JWT từ gateway/services → trusted, skip permission check
+      return true;
     }
 
-    // 4. Fetch user permissions (with cache)
+    // 5. For User JWT, check permissions
+    const userId = request.user?.userId || request.user?.data?.id;
+    const permVersion = request.user?.permVersion || request.user?.data?.permVersion;
+    const requestId = request.headers['x-request-id'];
+
+    if (!userId || permVersion === undefined) {
+      throw new ForbiddenException('Missing user context for permission check');
+    }
+
+    // 6. Fetch user permissions (with cache)
     const userPermissions = await this.permissionProvider.getPermissions(
       userId,
-      parseInt(permVersion),
+      typeof permVersion === 'string' ? parseInt(permVersion) : permVersion,
       requestId,
     );
 
-    // 5. Check if user has required permissions
+    // 7. Check if user has required permissions
     const hasPermission = this.permissionProvider.hasPermission(
       userPermissions,
       requiredPermissions,
@@ -59,7 +68,7 @@ export class PermissionGuard implements CanActivate {
       );
     }
 
-    // 6. Attach permissions to request for logging/audit
+    // 8. Attach permissions to request for logging/audit
     request.userPermissions = userPermissions;
 
     return true;
