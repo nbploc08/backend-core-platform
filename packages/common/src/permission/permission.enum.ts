@@ -16,6 +16,9 @@ export enum PermissionCode {
   PRODUCT_UPDATE = 'product:update',
   PRODUCT_DELETE = 'product:delete',
 
+  // Notifications
+  NOTIFICATIONS_READ = 'notifications:read',
+
   // Admin
   ADMIN_MANAGE_USERS = 'admin:manage-users',
   ADMIN_MANAGE_ROLES = 'admin:manage-roles',

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { ConfigService } from '@nestjs/config';
-import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import axios, { AxiosInstance } from 'axios';
 import { handleAxiosError } from '@common/core';
 
@@ -9,10 +8,7 @@ import { handleAxiosError } from '@common/core';
 export class NotificationService {
   private readonly client: AxiosInstance;
   private readonly baseURL: string;
-  constructor(
-    private config: ConfigService,
-    private internalJwt: InternalJwtService,
-  ) {
+  constructor(private config: ConfigService) {
     this.baseURL = this.config.get<string>('NOTIFICATION_SERVICE_URL') || 'http://localhost:3002';
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -23,15 +19,12 @@ export class NotificationService {
     });
   }
 
-  private getHeaders(requestId: string, userToken?: string, internalData?: object) {
+  private getHeaders(requestId: string, userToken?: string) {
     const headers: Record<string, string> = {
       'x-request-id': requestId,
     };
     if (userToken) {
       headers['Authorization'] = userToken;
-    } else {
-      const token = this.internalJwt.signInternalToken(internalData ?? {});
-      headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
   }
