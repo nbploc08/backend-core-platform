@@ -1,28 +1,59 @@
-import { Controller, Get, Patch, Param, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
+import { Info, User } from '@common/core';
 import { NotificationService } from './notification.service';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 
 @Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
-  @Get()
-  findAll() {
-    return this.notificationService.findAll();
+  private resolveUserId(
+    user?: { userId?: string },
+    infoData?: { userId?: string },
+    headerUserId?: string,
+  ): string {
+    return user?.userId ?? infoData?.userId ?? headerUserId ?? '';
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notificationService.findOne(+id);
+  @Get('list')
+  findAll(
+    @User() user: { userId?: string } | undefined,
+    @Info('data') infoData: { userId?: string } | undefined,
+    @Headers('x-user-id') headerUserId: string | undefined,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = this.resolveUserId(user, infoData, headerUserId);
+    return this.notificationService.listByUser(userId, page, limit);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationService.update(+id, updateNotificationDto);
+  @Get('unread-count')
+  unreadCount(
+    @User() user: { userId?: string } | undefined,
+    @Info('data') infoData: { userId?: string } | undefined,
+    @Headers('x-user-id') headerUserId: string | undefined,
+  ) {
+    const userId = this.resolveUserId(user, infoData, headerUserId);
+    return this.notificationService.unreadCount(userId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationService.remove(+id);
+  @Post(':id/read')
+  markRead(
+    @Param('id') id: string,
+    @User() user: { userId?: string } | undefined,
+    @Info('data') infoData: { userId?: string } | undefined,
+    @Headers('x-user-id') headerUserId: string | undefined,
+  ) {
+    const userId = this.resolveUserId(user, infoData, headerUserId);
+    return this.notificationService.markRead(userId, id);
+  }
+
+  @Post('read-all')
+  readAll(
+    @User() user: { userId?: string } | undefined,
+    @Info('data') infoData: { userId?: string } | undefined,
+    @Headers('x-user-id') headerUserId: string | undefined,
+  ) {
+    const userId = this.resolveUserId(user, infoData, headerUserId);
+    return this.notificationService.readAll(userId);
   }
 }
