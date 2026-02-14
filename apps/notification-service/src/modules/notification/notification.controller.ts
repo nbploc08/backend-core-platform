@@ -1,28 +1,34 @@
-import { Controller, Get, Patch, Param, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { User, UserOnly, TokenTypeGuard } from '@common/core';
 import { NotificationService } from './notification.service';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 
-@Controller('notification')
+@UseGuards(TokenTypeGuard)
+@UserOnly()
+@Controller('notification/internal')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
-  @Get()
-  findAll() {
-    return this.notificationService.findAll();
+  @Get('list')
+  findAll(
+    @User('userId') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationService.listByUser(userId, page, limit);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notificationService.findOne(+id);
+  @Get('unread-count')
+  unreadCount(@User('userId') userId: string) {
+    return this.notificationService.unreadCount(userId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationService.update(+id, updateNotificationDto);
+  @Post(':id/read')
+  markRead(@Param('id') id: string, @User('userId') userId: string) {
+    return this.notificationService.markRead(userId, id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationService.remove(+id);
+  @Post('read-all')
+  readAll(@User('userId') userId: string) {
+    return this.notificationService.readAll(userId);
   }
 }
