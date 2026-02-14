@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, Headers, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { Public } from '@common/core';
+import { Public, RequirePermission, PermissionCode } from '@common/core';
 
 @Controller('client/notification')
 export class NotificationController {
@@ -22,6 +22,7 @@ export class NotificationController {
   }
 
   @Get()
+  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   findAll(
     @Headers('authorization') auth: string,
     @Req() req: any,
@@ -32,6 +33,7 @@ export class NotificationController {
   }
 
   @Get('unread-count')
+  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   unreadCount(@Headers('authorization') auth: string, @Req() req: any) {
     return this.notificationService.unreadCount(auth, req.requestId);
   }
