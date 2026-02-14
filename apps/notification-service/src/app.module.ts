@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PermissionModule, PermissionGuard } from '@common/core';
 import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
 import { JwtModule } from './modules/jwt/jwt.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -24,6 +25,8 @@ import { JwtModule } from './modules/jwt/jwt.module';
     JetstreamModule,
     JobsModule,
     JwtModule,
+    PrismaModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [
