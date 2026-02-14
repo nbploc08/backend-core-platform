@@ -22,7 +22,6 @@ export class NotificationController {
   }
 
   @Get()
-  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   findAll(
     @Headers('authorization') auth: string,
     @Req() req: any,
@@ -33,7 +32,6 @@ export class NotificationController {
   }
 
   @Get('unread-count')
-  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   unreadCount(@Headers('authorization') auth: string, @Req() req: any) {
     return this.notificationService.unreadCount(auth, req.requestId);
   }

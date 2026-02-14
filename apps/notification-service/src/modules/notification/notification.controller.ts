@@ -1,5 +1,5 @@
 import { Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
-import { Info, User } from '@common/core';
+import { Info, PermissionCode, RequirePermission, User } from '@common/core';
 import { NotificationService } from './notification.service';
 
 @Controller('notification')
@@ -15,6 +15,7 @@ export class NotificationController {
   }
 
   @Get('list')
+  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   findAll(
     @User() user: { userId?: string } | undefined,
     @Info('data') infoData: { userId?: string } | undefined,
@@ -27,6 +28,7 @@ export class NotificationController {
   }
 
   @Get('unread-count')
+  @RequirePermission(PermissionCode.NOTIFICATIONS_READ)
   unreadCount(
     @User() user: { userId?: string } | undefined,
     @Info('data') infoData: { userId?: string } | undefined,
