@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, Headers, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { Public, RequirePermission, PermissionCode } from '@common/core';
+import { Public } from '@common/core';
 
 @Controller('client/notification')
 export class NotificationController {
