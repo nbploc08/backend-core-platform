@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { ConfigService } from '@nestjs/config';
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import axios, { AxiosInstance } from 'axios';
@@ -56,7 +55,7 @@ export class NotificationService {
 
   async create(createNotificationDto: CreateNotificationDto, authToken: string, requestId: string) {
     try {
-      const response = await this.client.post('notifications', createNotificationDto, {
+      const response = await this.client.post('notification', createNotificationDto, {
         headers: this.getHeaders(requestId, authToken),
       });
       return response.data;
@@ -65,9 +64,21 @@ export class NotificationService {
     }
   }
 
-  async findAll(authToken: string, requestId: string) {
+  async findAll(authToken: string, requestId: string, page?: string, limit?: string) {
     try {
-      const response = await this.client.get('notifications', {
+      const response = await this.client.get('notification/list', {
+        headers: this.getHeaders(requestId, authToken),
+        params: { page, limit },
+      });
+      return response.data;
+    } catch (err: unknown) {
+      handleAxiosError(err, 'Notification service request failed');
+    }
+  }
+
+  async unreadCount(authToken: string, requestId: string) {
+    try {
+      const response = await this.client.get('notification/unread-count', {
         headers: this.getHeaders(requestId, authToken),
       });
       return response.data;
@@ -76,9 +87,9 @@ export class NotificationService {
     }
   }
 
-  async findOne(id: string, authToken: string, requestId: string) {
+  async markRead(id: string, authToken: string, requestId: string) {
     try {
-      const response = await this.client.get(`notifications/${id}`, {
+      const response = await this.client.post(`notification/${id}/read`, null, {
         headers: this.getHeaders(requestId, authToken),
       });
       return response.data;
@@ -87,25 +98,9 @@ export class NotificationService {
     }
   }
 
-  async update(
-    id: string,
-    updateNotificationDto: UpdateNotificationDto,
-    authToken: string,
-    requestId: string,
-  ) {
+  async readAll(authToken: string, requestId: string) {
     try {
-      const response = await this.client.patch(`notifications/${id}`, updateNotificationDto, {
-        headers: this.getHeaders(requestId, authToken),
-      });
-      return response.data;
-    } catch (err: unknown) {
-      handleAxiosError(err, 'Notification service request failed');
-    }
-  }
-
-  async remove(id: string, authToken: string, requestId: string) {
-    try {
-      const response = await this.client.delete(`notifications/${id}`, {
+      const response = await this.client.post('notification/read-all', null, {
         headers: this.getHeaders(requestId, authToken),
       });
       return response.data;

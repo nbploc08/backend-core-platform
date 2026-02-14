@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Headers, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { Public } from '@common/core';
 
 @Controller('client/notification')
@@ -23,27 +22,27 @@ export class NotificationController {
   }
 
   @Get()
-  findAll(@Headers('authorization') auth: string, @Req() req: any) {
-    return this.notificationService.findAll(auth, req.requestId);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string, @Headers('authorization') auth: string, @Req() req: any) {
-    return this.notificationService.findOne(id, auth, req.requestId);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateNotificationDto: UpdateNotificationDto,
+  findAll(
     @Headers('authorization') auth: string,
     @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.notificationService.update(id, updateNotificationDto, auth, req.requestId);
+    return this.notificationService.findAll(auth, req.requestId, page, limit);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string, @Headers('authorization') auth: string, @Req() req: any) {
-    return this.notificationService.remove(id, auth, req.requestId);
+  @Get('unread-count')
+  unreadCount(@Headers('authorization') auth: string, @Req() req: any) {
+    return this.notificationService.unreadCount(auth, req.requestId);
+  }
+
+  @Post(':id/read')
+  markRead(@Param('id') id: string, @Headers('authorization') auth: string, @Req() req: any) {
+    return this.notificationService.markRead(id, auth, req.requestId);
+  }
+
+  @Post('read-all')
+  readAll(@Headers('authorization') auth: string, @Req() req: any) {
+    return this.notificationService.readAll(auth, req.requestId);
   }
 }
