@@ -11,7 +11,7 @@ import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
 import { JwtModule } from './modules/jwt/jwt.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { RolesModule } from './modules/roles/roles.module';
-import { PermissionGuard, PermissionModule } from '@common/core';
+import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,6 +37,10 @@ import { PermissionGuard, PermissionModule } from '@common/core';
     {
       provide: APP_GUARD, //
       useClass: PermissionGuard, // Permission check
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TokenTypeGuard, // Internal only check
     },
   ],
 })

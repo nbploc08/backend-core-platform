@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { PermissionCache } from './permission.cache';
 import { PermissionProvider } from './permission.provider';
 import { PermissionGuard } from './permission.guard';
+import { TokenTypeGuard } from './token-type.guard';
 import axios from 'axios';
 
 @Global()
@@ -14,6 +15,7 @@ import axios from 'axios';
     PermissionCache,
     PermissionProvider,
     PermissionGuard,
+    TokenTypeGuard,
     {
       provide: 'HTTP_CLIENT',
       useValue: axios.create({
@@ -22,6 +24,6 @@ import axios from 'axios';
       }),
     },
   ],
-  exports: [Reflector, PermissionCache, PermissionProvider, PermissionGuard],
+  exports: [Reflector, PermissionCache, PermissionProvider, PermissionGuard, TokenTypeGuard],
 })
 export class PermissionModule {}
