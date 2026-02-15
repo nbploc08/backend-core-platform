@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Post,
@@ -51,8 +52,9 @@ export class AuthClientController {
   async register(
     @Body() registerDto: Record<string, unknown>,
     @Req() req: Request & { requestId?: string },
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.authClient.register(registerDto, getRequestId(req));
+    return this.authClient.register(registerDto, getRequestId(req), req.path, idempotencyKey);
   }
 
   @Public()

@@ -9,6 +9,7 @@ import { AuthClientModule } from './modules/client/auth-service/auth/auth-client
 import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
 import { NotificationModule } from './modules/client/notification-service/notification/notification.module';
 import { PermissionGuard, PermissionModule } from '@common/core';
+import { PrismaModule } from './modules/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PermissionGuard, PermissionModule } from '@common/core';
     RoleClientModule,
     NotificationModule,
     PermissionModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [

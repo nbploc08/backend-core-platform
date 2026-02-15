@@ -4,7 +4,8 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { Response } from 'express';
 
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
-import { handleAxiosError } from '@common/core';
+import { handleAxiosError, ServiceError } from '@common/core';
+import { IdempotencyService } from 'src/modules/share/idempotency.service';
 
 export type ProfileResponse = {
   id: string;
@@ -35,6 +36,7 @@ export class AuthClientService {
   constructor(
     private config: ConfigService,
     private internalJwt: InternalJwtService,
+    private idempotency: IdempotencyService,
   ) {
     this.baseURL = this.config.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
     this.client = axios.create({
@@ -103,20 +105,64 @@ export class AuthClientService {
     }
   }
 
-  async register(registerDto: Record<string, unknown>, requestId: string): Promise<any> {
+  async register(
+    registerDto: Record<string, unknown>,
+    requestId: string,
+    requestPath: string,
+    idempotencyKey?: string,
+  ): Promise<any> {
+    let recordId = '';
     try {
+      // Check idempotency
+      const {
+        recordId: rId,
+        shouldExecute,
+        cachedResponse,
+      } = await this.idempotency.checkIdempotency({
+        method: 'POST',
+        path: requestPath || '/client/auth/register',
+        body: registerDto,
+        key: idempotencyKey || '',
+      });
+      recordId = rId;
+
+      // Return cached response if exists
+      if (!shouldExecute && cachedResponse !== undefined) {
+        return cachedResponse;
+      }
+
+      // Execute request
       const response = await this.client.post('auth/internal/register', registerDto, {
         headers: this.getHeaders(requestId),
       });
+
       if (response.status >= 400) {
+        // Mark failed
+        if (recordId) {
+          await this.idempotency.markFailed(recordId, response.status, response.data);
+        }
         handleAxiosError(
           { response: { status: response.status, data: response.data } },
           'Auth service request failed',
         );
       }
+
+      // Mark completed
+      if (recordId) {
+        await this.idempotency.markCompleted(recordId, response.status, response.data);
+        this.idempotency.cacheResponse(idempotencyKey || '', response.data);
+      }
+
       return response.data;
     } catch (err: unknown) {
-      handleAxiosError(err, 'Auth service request failed');
+      // Mark as failed if record exists
+      if (recordId) {
+        await this.idempotency.markFailed(recordId, 500, {
+          error: 'Internal server error',
+          details: err instanceof Error ? err.message : String(err),
+        });
+      }
+      handleAxiosError(err, 'Register request failed');
     }
   }
 
