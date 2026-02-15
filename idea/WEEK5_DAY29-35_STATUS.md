@@ -14,7 +14,7 @@
 | **Day 32** | Consume USER_REGISTERED → welcome noti + publish notification.created | ⚠ Một phần  | Consumer có; **chưa** tạo welcome noti trong DB, **chưa** publish `notification.created`           |
 | **Day 33** | Idempotency framework (gateway)                                       | ❌ Chưa làm | Không có bảng IdempotencyKey, không có middleware/interceptor idempotency                          |
 | **Day 34** | Apply idempotency to markRead                                         | ❌ Chưa làm | Phụ thuộc Day 30 + 33                                                                              |
-| **Day 35** | Buffer + pagination polish                                            | ❌ Chưa làm | Chưa có API list/pagination để polish                                                              |
+| **Day 35** | Buffer + pagination polish                                            | ✅ Done     | Da bo sung sortBy/sortOrder va response metadata cho list notifications                            |
 
 ---
 
@@ -182,13 +182,15 @@
 
 **Hiện trạng code:**
 
-- Notification-service chưa có API list thật (Day 30 chưa xong) → chưa có pagination/sort để polish.
+- Notification-service `GET /notification/list` da ho tro `page`, `limit`, `sortBy`, `sortOrder`.
+- Response tra ve co them `page`, `limit`, `sortBy`, `sortOrder`, `total`.
+- Gateway forward query params tu `/client/notification` sang notification-service.
 
-**Kết luận:** **Chưa làm.**
+**Kết luận:** **Da lam.**
 
 **TODO:**
 
-- Sau Day 30: thêm query params (limit, offset hoặc cursor, sortBy, sortOrder) cho list, trả về format có total/cursor tùy thiết kế.
+- (Optional) Neu can cursor-based pagination, co the bo sung `cursor` va `nextCursor`.
 
 ---
 
