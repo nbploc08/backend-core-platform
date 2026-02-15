@@ -27,8 +27,10 @@ export class NotificationController {
     @Req() req: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
-    return this.notificationService.findAll(auth, req.requestId, page, limit);
+    return this.notificationService.findAll(auth, req.requestId, page, limit, sortBy, sortOrder);
   }
 
   @Get('unread-count')

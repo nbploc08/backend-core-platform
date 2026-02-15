@@ -18,7 +18,13 @@ export class NotificationService {
     return true;
   }
 
-  async listByUser(userId: string, pageRaw?: string, limitRaw?: string) {
+  async listByUser(
+    userId: string,
+    pageRaw?: string,
+    limitRaw?: string,
+    sortByRaw?: string,
+    sortOrderRaw?: string,
+  ) {
     if (!userId) {
       throw new ServiceError({
         code: ErrorCodes.VALIDATION_ERROR,
@@ -30,11 +36,16 @@ export class NotificationService {
     const page = Math.max(1, Number(pageRaw ?? 1) || 1);
     const limit = Math.min(100, Math.max(1, Number(limitRaw ?? 20) || 20));
     const skip = (page - 1) * limit;
+    const allowedSortFields = ['createdAt', 'readAt'] as const;
+    const sortBy = allowedSortFields.includes(sortByRaw as (typeof allowedSortFields)[number])
+      ? (sortByRaw as (typeof allowedSortFields)[number])
+      : 'createdAt';
+    const sortOrder = sortOrderRaw === 'asc' ? 'asc' : 'desc';
 
     const [items, total] = await Promise.all([
       this.prisma.notification.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
       }),
@@ -46,6 +57,8 @@ export class NotificationService {
       total,
       page,
       limit,
+      sortBy,
+      sortOrder,
     };
   }
 

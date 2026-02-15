@@ -22,9 +22,11 @@ export class NotificationController {
     @Headers('x-user-id') headerUserId: string | undefined,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
     const userId = this.resolveUserId(user, infoData, headerUserId);
-    return this.notificationService.listByUser(userId, page, limit);
+    return this.notificationService.listByUser(userId, page, limit, sortBy, sortOrder);
   }
 
   @Get('unread-count')

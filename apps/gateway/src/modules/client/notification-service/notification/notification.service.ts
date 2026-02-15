@@ -57,11 +57,18 @@ export class NotificationService {
     }
   }
 
-  async findAll(authToken: string, requestId: string, page?: string, limit?: string) {
+  async findAll(
+    authToken: string,
+    requestId: string,
+    page?: string,
+    limit?: string,
+    sortBy?: string,
+    sortOrder?: string,
+  ) {
     try {
       const response = await this.client.get('notification/list', {
         headers: this.getHeaders(requestId, authToken),
-        params: { page, limit },
+        params: { page, limit, sortBy, sortOrder },
       });
       return response.data;
     } catch (err: unknown) {
