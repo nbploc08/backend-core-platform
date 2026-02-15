@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { createHash } from 'crypto';
 import type { Response } from 'express';
 
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
-import { handleAxiosError } from '@common/core';
+import { ErrorCodes, handleAxiosError, ServiceError } from '@common/core';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 export type ProfileResponse = {
   id: string;
@@ -31,10 +33,12 @@ function forwardSetCookie(authResponse: AxiosResponse, clientRes: Response): voi
 export class AuthClientService {
   private readonly client: AxiosInstance;
   private readonly baseURL: string;
+  private readonly idempotencyCache: Map<string, { response: any; expiresAt: number }> = new Map();
 
   constructor(
     private config: ConfigService,
     private internalJwt: InternalJwtService,
+    private readonly prisma: PrismaService,
   ) {
     this.baseURL = this.config.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
     this.client = axios.create({
@@ -57,6 +61,38 @@ export class AuthClientService {
       headers['Authorization'] = `Bearer ${internalToken}`;
     }
     return headers;
+  }
+
+  private computeRequestHash(method: string, path: string, body: Record<string, unknown>): string {
+    const canonical = {
+      method,
+      path,
+      body: JSON.stringify(body),
+    };
+    return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
+  }
+
+  private getIdempotencyCacheResponse(key: string): any | null {
+    const cached = this.idempotencyCache.get(key);
+    if (!cached) return null;
+
+    if (Date.now() > cached.expiresAt) {
+      this.idempotencyCache.delete(key);
+      return null;
+    }
+
+    return cached.response;
+  }
+
+  private setIdempotencyCacheResponse(
+    key: string,
+    response: any,
+    ttlMs: number = 5 * 60 * 1000,
+  ): void {
+    this.idempotencyCache.set(key, {
+      response,
+      expiresAt: Date.now() + ttlMs,
+    });
   }
 
   async getProfileByUserId(
@@ -103,19 +139,129 @@ export class AuthClientService {
     }
   }
 
-  async register(registerDto: Record<string, unknown>, requestId: string): Promise<any> {
+  async register(
+    registerDto: Record<string, unknown>,
+    requestId: string,
+    requestPath: string,
+    idempotencyKey?: string,
+  ): Promise<any> {
+    let idempotencyRecord: { id: string } | null = null;
+    const path = requestPath;
+    const requestHash = this.computeRequestHash('POST', path, registerDto);
+
     try {
+      if (!idempotencyKey) {
+        const response = await this.client.post('auth/internal/register', registerDto, {
+          headers: this.getHeaders(requestId),
+        });
+        if (response.status >= 400) {
+          handleAxiosError(
+            { response: { status: response.status, data: response.data } },
+            'Auth service request failed',
+          );
+        }
+        return response.data;
+      }
+
+      // 1. Check in-memory cache first
+      const cachedResponse = this.getIdempotencyCacheResponse(idempotencyKey);
+      if (cachedResponse !== null) {
+        return cachedResponse;
+      }
+
+      // 2. Check database
+      const existingRecord = await this.prisma.idempotencyRecord.findUnique({
+        where: { key: idempotencyKey },
+      });
+
+      if (existingRecord) {
+        if (existingRecord.requestHash !== requestHash) {
+          throw new ServiceError({
+            code: ErrorCodes.CONFLICT,
+            statusCode: 409,
+            message: 'Idempotency key conflict',
+            exposeMessage: true,
+          });
+        }
+
+        if (existingRecord.status === 'completed') {
+          // Cache the completed response
+          this.setIdempotencyCacheResponse(idempotencyKey, existingRecord.responseBody);
+          return existingRecord.responseBody;
+        }
+
+        if (existingRecord.status === 'processing') {
+          throw new ServiceError({
+            code: ErrorCodes.CONFLICT,
+            statusCode: 409,
+            message: 'Request is still processing',
+            exposeMessage: true,
+          });
+        }
+
+        idempotencyRecord = await this.prisma.idempotencyRecord.update({
+          where: { id: existingRecord.id },
+          data: {
+            status: 'processing',
+            responseStatus: null,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      } else {
+        idempotencyRecord = await this.prisma.idempotencyRecord.create({
+          data: {
+            key: idempotencyKey,
+            requestHash,
+            status: 'processing',
+            responseStatus: null,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+
       const response = await this.client.post('auth/internal/register', registerDto, {
         headers: this.getHeaders(requestId),
       });
       if (response.status >= 400) {
+        if (idempotencyRecord) {
+          await this.prisma.idempotencyRecord.update({
+            where: { id: idempotencyRecord.id },
+            data: {
+              status: 'failed',
+              responseStatus: response.status,
+              responseBody: response.data,
+            },
+          });
+        }
         handleAxiosError(
           { response: { status: response.status, data: response.data } },
           'Auth service request failed',
         );
       }
+      if (idempotencyRecord) {
+        await this.prisma.idempotencyRecord.update({
+          where: { id: idempotencyRecord.id },
+          data: {
+            status: 'completed',
+            responseStatus: response.status,
+            responseBody: response.data,
+          },
+        });
+        // Cache the successful response
+        this.setIdempotencyCacheResponse(idempotencyKey, response.data);
+      }
       return response.data;
     } catch (err: unknown) {
+      if (idempotencyKey && idempotencyRecord) {
+        await this.prisma.idempotencyRecord.update({
+          where: { id: idempotencyRecord.id },
+          data: {
+            status: 'failed',
+            responseStatus: 500,
+            responseBody: { error: 'Internal server error' },
+          },
+        });
+      }
       handleAxiosError(err, 'Auth service request failed');
     }
   }
