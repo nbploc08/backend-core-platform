@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Test</title>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #log {
+      background: #1e1e1e;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 8px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
+    }
+    .log-entry.error {
+      color: #ff6b6b;
+    }
+    .log-entry.success {
+      color: #69db7c;
+    }
+    .log-entry.info {
+      color: #74c0fc;
+    }
+    .status {
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .status.connected {
+      background: #69db7c;
+      color: #000;
+    }
+    .status.disconnected {
+      background: #ff6b6b;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔌 WebSocket Test Client</h1>
+
+  <div class="section">
+    <h3>1. Nhập JWT Token</h3>
+    <p>Copy token từ response của <code>POST /client/auth/login</code></p>
+    <input type="text" id="token" placeholder="Paste JWT token here (accessToken)">
+  </div>
+
+  <div class="section">
+    <h3>2. Kết nối</h3>
+    <div id="status" class="status disconnected">Disconnected</div>
+    <br>
+    <button id="connectBtn" onclick="connect()">Connect</button>
+    <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+    <button onclick="sendPing()">Send Ping</button>
+  </div>
+
+  <div class="section">
+    <h3>3. Logs</h3>
+    <button onclick="clearLog()">Clear Log</button>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    let socket = null;
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.insertBefore(entry, logDiv.firstChild);
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function updateStatus(connected) {
+      const status = document.getElementById('status');
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      
+      if (connected) {
+        status.className = 'status connected';
+        status.textContent = 'Connected ✓';
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+      } else {
+        status.className = 'status disconnected';
+        status.textContent = 'Disconnected';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      }
+    }
+
+    function connect() {
+      const token = document.getElementById('token').value.trim();
+      
+      if (!token) {
+        log('Please enter a JWT token first!', 'error');
+        return;
+      }
+
+      log('Connecting to WebSocket server...');
+
+      // Kết nối với token trong auth object
+      socket = io('http://localhost:3000', {
+        auth: {
+          token: token
+        },
+        // Hoặc có thể dùng query string:
+        // query: { token: token }
+      });
+
+      // Event: Kết nối thành công
+      socket.on('connect', () => {
+        log(`Connected! Socket ID: ${socket.id}`, 'success');
+        updateStatus(true);
+      });
+
+      // Event: Xác thực thành công
+      socket.on('authenticated', (data) => {
+        log(`Authenticated! User ID: ${data.userId}`, 'success');
+      });
+
+      // Event: Ngắt kết nối
+      socket.on('disconnect', (reason) => {
+        log(`Disconnected: ${reason}`, 'error');
+        updateStatus(false);
+      });
+
+      // Event: Lỗi
+      socket.on('error', (error) => {
+        log(`Error: ${JSON.stringify(error)}`, 'error');
+      });
+
+      // Event: Pong response
+      socket.on('pong', (data) => {
+        log(`Pong received! Server time: ${data.timestamp}`, 'info');
+      });
+
+      // Event: Notification mới (Day 37 sẽ implement)
+      socket.on('notification:new', (data) => {
+        log(`🔔 New notification: ${JSON.stringify(data)}`, 'success');
+      });
+
+      // Event: Notification updated (Day 38 sẽ implement)
+      socket.on('notification:updated', (data) => {
+        log(`📝 Notification updated: ${JSON.stringify(data)}`, 'info');
+      });
+
+      // Event: Connect error
+      socket.on('connect_error', (error) => {
+        log(`Connection error: ${error.message}`, 'error');
+      });
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+        log('Manually disconnected');
+        updateStatus(false);
+      }
+    }
+
+    function sendPing() {
+      if (socket && socket.connected) {
+        log('Sending ping...');
+        socket.emit('ping');
+      } else {
+        log('Not connected! Connect first.', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

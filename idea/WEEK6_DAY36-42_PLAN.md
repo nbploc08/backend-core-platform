@@ -14,15 +14,18 @@
 ## 🔔 Chức năng của tính năng WebSocket Notification
 
 ### 1. Push notification realtime
+
 - Khi có notification mới (ví dụ: welcome noti sau đăng ký), user nhận ngay lập tức
 - Bell icon cập nhật số unread mà không cần gọi API
 
 ### 2. Đồng bộ nhiều tabs (Multi-tab sync)
+
 - User mở 2+ tabs cùng tài khoản
 - Đánh dấu đã đọc ở tab A → tab B tự động cập nhật
 - Bell count đồng bộ realtime giữa các tabs
 
 ### 3. Two-way communication
+
 - **Server → Client:** Push notification mới, cập nhật unread count
 - **Client → Server:** Mark read, read-all qua WebSocket (không cần REST API)
 
@@ -87,14 +90,14 @@
 
 ## 📍 Chạy ở đâu?
 
-| Component | Service | Port | Vai trò |
-|-----------|---------|------|---------|
-| **WebSocket Server** | Gateway | 3000 | Quản lý kết nối WS, auth, broadcast |
-| **Socket Registry** | Gateway | 3000 | Track user → sockets mapping |
-| **JetStream Consumer** | Gateway | 3000 | Subscribe events từ NATS |
-| **Notification APIs** | Notification-service | 3002 | CRUD notifications, publish events |
-| **Event Bus** | NATS JetStream | 4222 | Trung gian events giữa services |
-| **Database** | PostgreSQL | 5432 | Lưu notifications |
+| Component              | Service              | Port | Vai trò                             |
+| ---------------------- | -------------------- | ---- | ----------------------------------- |
+| **WebSocket Server**   | Gateway              | 3000 | Quản lý kết nối WS, auth, broadcast |
+| **Socket Registry**    | Gateway              | 3000 | Track user → sockets mapping        |
+| **JetStream Consumer** | Gateway              | 3000 | Subscribe events từ NATS            |
+| **Notification APIs**  | Notification-service | 3002 | CRUD notifications, publish events  |
+| **Event Bus**          | NATS JetStream       | 4222 | Trung gian events giữa services     |
+| **Database**           | PostgreSQL           | 5432 | Lưu notifications                   |
 
 ---
 
@@ -103,6 +106,7 @@
 ### 1. Gateway Service (chủ đạo cho WebSocket)
 
 **Files mới cần tạo:**
+
 ```
 apps/gateway/src/modules/websocket/
 ├── websocket.module.ts          # NestJS module
@@ -112,6 +116,7 @@ apps/gateway/src/modules/websocket/
 ```
 
 **Chức năng:**
+
 - Chấp nhận WebSocket connections từ clients
 - Verify JWT và authenticate user
 - Track socket connections per user (1 user có thể có nhiều tabs)
@@ -123,12 +128,14 @@ apps/gateway/src/modules/websocket/
 ### 2. Notification Service (hỗ trợ)
 
 **Files cần sửa:**
+
 ```
 apps/notification-service/src/modules/notification/notification.service.ts
 apps/notification-service/src/modules/nats/nats.service.ts
 ```
 
 **Chức năng:**
+
 - Khi tạo notification mới → publish `notification.created` event lên NATS
 - Cung cấp internal APIs: `unreadCount`, `markRead`, `readAll`
 
@@ -137,6 +144,7 @@ apps/notification-service/src/modules/nats/nats.service.ts
 ### 3. Packages/Contracts (định nghĩa schemas)
 
 **Files mới cần tạo:**
+
 ```
 packages/contracts/src/ws/
 ├── index.ts
@@ -192,53 +200,54 @@ packages/contracts/src/ws/
 
 ## 🔐 Security
 
-| Layer | Mechanism |
-|-------|-----------|
-| WS Connection | JWT verify khi handshake |
-| Socket Registry | Chỉ emit đến sockets đã authenticated |
-| Internal APIs | Internal JWT giữa Gateway → Notification-service |
-| Rate Limiting | Max messages per second per user |
+| Layer           | Mechanism                                        |
+| --------------- | ------------------------------------------------ |
+| WS Connection   | JWT verify khi handshake                         |
+| Socket Registry | Chỉ emit đến sockets đã authenticated            |
+| Internal APIs   | Internal JWT giữa Gateway → Notification-service |
+| Rate Limiting   | Max messages per second per user                 |
 
 ---
 
 ## 📊 Tóm tắt nhanh
 
-| Câu hỏi | Trả lời |
-|---------|---------|
-| **Mục tiêu?** | Notification realtime, multi-tab sync |
-| **Chạy ở đâu?** | Gateway service (port 3000) |
+| Câu hỏi                | Trả lời                                                          |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Mục tiêu?**          | Notification realtime, multi-tab sync                            |
+| **Chạy ở đâu?**        | Gateway service (port 3000)                                      |
 | **Services tham gia?** | Gateway (chính), Notification-service (hỗ trợ), NATS (event bus) |
-| **Protocol?** | WebSocket (Socket.IO) |
-| **Authentication?** | JWT trong handshake hoặc AUTH message |
+| **Protocol?**          | WebSocket (Socket.IO)                                            |
+| **Authentication?**    | JWT trong handshake hoặc AUTH message                            |
 
 ---
 
 ## Tổng quan tiến độ Week 6
 
-| Ngày       | Nội dung                                              | Trạng thái  | Ghi chú |
-| ---------- | ----------------------------------------------------- | ----------- | ------- |
-| **Day 36** | WS auth + socket registry                             | ❌ Chưa làm |         |
-| **Day 37** | Subscribe notification.created → push WS              | ❌ Chưa làm |         |
-| **Day 38** | WS inbound: notification:read / read-all              | ❌ Chưa làm |         |
-| **Day 39** | Unread count realtime + bell sync                     | ❌ Chưa làm |         |
-| **Day 40** | WS hardening (rate limit, disconnect cleanup)         | ❌ Chưa làm |         |
-| **Day 41-42** | Buffer + load test                                 | ❌ Chưa làm |         |
+| Ngày          | Nội dung                                      | Trạng thái  | Ghi chú |
+| ------------- | --------------------------------------------- | ----------- | ------- |
+| **Day 36**    | WS auth + socket registry                     | ❌ Chưa làm |         |
+| **Day 37**    | Subscribe notification.created → push WS      | ❌ Chưa làm |         |
+| **Day 38**    | WS inbound: notification:read / read-all      | ❌ Chưa làm |         |
+| **Day 39**    | Unread count realtime + bell sync             | ❌ Chưa làm |         |
+| **Day 40**    | WS hardening (rate limit, disconnect cleanup) | ❌ Chưa làm |         |
+| **Day 41-42** | Buffer + load test                            | ❌ Chưa làm |         |
 
 ---
 
 ## Các task còn nợ từ Tuần 5 (cần hoàn thành trước)
 
-| Task | Ưu tiên | Trạng thái |
-|------|---------|------------|
-| **Day 31:** Thêm `@RequirePermission` cho gateway notification endpoints | Cao | ⚠️ Thiếu |
+| Task                                                                           | Ưu tiên     | Trạng thái                |
+| ------------------------------------------------------------------------------ | ----------- | ------------------------- |
+| **Day 31:** Thêm `@RequirePermission` cho gateway notification endpoints       | Cao         | ⚠️ Thiếu                  |
 | **Day 32:** Tạo welcome notification trong DB + publish `notification.created` | **Rất cao** | ⚠️ Thiếu (blocker Day 37) |
-| **Day 34:** Apply idempotency cho `POST /notifications/:id/read` | Trung bình | ⚠️ Thiếu |
+| **Day 34:** Apply idempotency cho `POST /notifications/:id/read`               | Trung bình  | ⚠️ Thiếu                  |
 
 ---
 
 ## Day 36 — WS auth + socket registry
 
 **Mục tiêu:**
+
 1. WS server trong gateway (NestJS WebSocket Gateway với `@nestjs/websockets` + `socket.io`)
 2. Client gửi JWT trong handshake hoặc message `AUTH {token}`
 3. Verify JWT, map userId → sockets (Socket Registry)
@@ -246,6 +255,7 @@ packages/contracts/src/ws/
 **TODO chi tiết:**
 
 - [ ] Cài đặt dependencies:
+
   ```bash
   npm install @nestjs/websockets @nestjs/platform-socket.io socket.io
   ```
@@ -262,6 +272,7 @@ packages/contracts/src/ws/
 - [ ] Cleanup socket khi disconnect
 
 **Deliverables:**
+
 - WS endpoint hoạt động tại `ws://localhost:3000` (hoặc namespace `/ws`)
 - Client có thể connect với JWT và được authenticate
 - Socket registry track được user connections
@@ -271,6 +282,7 @@ packages/contracts/src/ws/
 ## Day 37 — Subscribe `notification.created` → push WS `notification:new`
 
 **Mục tiêu:**
+
 1. Gateway subscribe JetStream event `notification.created`
 2. Emit đến tất cả sockets của user
 3. Include unreadCount update
@@ -304,6 +316,7 @@ packages/contracts/src/ws/
   ```
 
 **Deliverables:**
+
 - Khi có notification mới, user nhận được WS event `notification:new` realtime
 - Payload bao gồm notification details + unreadCount
 
@@ -312,6 +325,7 @@ packages/contracts/src/ws/
 ## Day 38 — WS inbound: `notification:read` / `read-all`
 
 **Mục tiêu:**
+
 1. Define WS payload contract trong `packages/contracts`
 2. Validate inbound messages với Zod
 3. Gateway gọi notification-service internal APIs với internal JWT
@@ -320,6 +334,7 @@ packages/contracts/src/ws/
 **TODO chi tiết:**
 
 - [ ] Tạo contracts trong `packages/contracts/src/ws/`:
+
   ```
   notification-read.ws.ts
   notification-read-all.ws.ts
@@ -328,6 +343,7 @@ packages/contracts/src/ws/
   ```
 
 - [ ] Schema cho `notification:read` request:
+
   ```typescript
   export const WS_NOTIFICATION_READ = 'notification:read';
   export const NotificationReadRequestSchema = z.object({
@@ -336,12 +352,14 @@ packages/contracts/src/ws/
   ```
 
 - [ ] Schema cho `notification:read-all` request:
+
   ```typescript
   export const WS_NOTIFICATION_READ_ALL = 'notification:read-all';
   // No payload needed, userId from socket auth
   ```
 
 - [ ] Schema cho `notification:updated` broadcast:
+
   ```typescript
   export const WS_NOTIFICATION_UPDATED = 'notification:updated';
   export const NotificationUpdatedPayloadSchema = z.object({
@@ -359,6 +377,7 @@ packages/contracts/src/ws/
   - Broadcast `notification:updated` đến **tất cả sockets** của user (sync tabs)
 
 **Deliverables:**
+
 - Client có thể gửi `notification:read` qua WS
 - Client có thể gửi `notification:read-all` qua WS
 - Tất cả tabs của user nhận `notification:updated` event
@@ -368,12 +387,14 @@ packages/contracts/src/ws/
 ## Day 39 — Unread count realtime + bell sync
 
 **Mục tiêu:**
+
 - Đảm bảo updates lan truyền giữa các tabs của cùng user
 - Bell icon luôn hiển thị đúng unreadCount
 
 **TODO chi tiết:**
 
 - [ ] Định nghĩa event `unreadCount:updated`:
+
   ```typescript
   export const WS_UNREAD_COUNT_UPDATED = 'unreadCount:updated';
   export const UnreadCountUpdatedSchema = z.object({
@@ -392,6 +413,7 @@ packages/contracts/src/ws/
   - Verify các tab khác cập nhật
 
 **Deliverables:**
+
 - Multi-tab sync hoạt động chính xác
 - Bell icon count đồng bộ realtime
 
@@ -400,6 +422,7 @@ packages/contracts/src/ws/
 ## Day 40 — WS hardening
 
 **Mục tiêu:**
+
 - Rate limit WS messages per user
 - Handle disconnect cleanup properly
 - Graceful reconnection
@@ -407,11 +430,12 @@ packages/contracts/src/ws/
 **TODO chi tiết:**
 
 - [ ] Implement rate limiter cho WS messages:
+
   ```typescript
   // Simple in-memory rate limiter
   // Max 10 messages per second per user
   private readonly rateLimits = new Map<string, { count: number; resetAt: number }>();
-  
+
   private checkRateLimit(userId: string): boolean {
     const now = Date.now();
     const limit = this.rateLimits.get(userId);
@@ -438,6 +462,7 @@ packages/contracts/src/ws/
   - Track active connections count
 
 **Deliverables:**
+
 - WS rate limiting hoạt động
 - Disconnect cleanup không leak memory
 - Reconnection hoạt động smooth
@@ -447,12 +472,14 @@ packages/contracts/src/ws/
 ## Day 41-42 — Buffer + load test
 
 **Mục tiêu:**
+
 - Simulate 50+ WS clients đồng thời
 - Đảm bảo hệ thống ổn định
 
 **TODO chi tiết:**
 
 - [ ] Tạo script load test (có thể dùng Artillery hoặc custom script):
+
   ```bash
   # artillery config hoặc custom Node.js script
   # Simulate 50 concurrent WS connections
@@ -477,6 +504,7 @@ packages/contracts/src/ws/
 - [ ] Document kết quả load test
 
 **Deliverables:**
+
 - Load test script
 - Report kết quả (pass/fail, metrics)
 - Fixes cho issues phát hiện
