@@ -21,6 +21,9 @@
   },
   "dependencies": {
     "@common/core": "*",
+    "@nestjs/websockets": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.0.1",
+    "socket.io": "^4.8.1",
     "@prisma/client": "^6.0.0",
     "cookie-parser": "^1.4.6",
     "@nestjs/common": "^11.0.1",
