@@ -22,3 +22,9 @@ export * from './permission/token-type.guard';
 export * from './permission/permission.provider';
 export * from './permission/permission.cache';
 export * from './permission/permission.module';
+
+export * from './nats/nats.service';
+export * from './nats/nats.module';
+export * from './nats/nats.interfaces';
+export * from './nats/nats.constants';
+export * from './nats/base-jetstream-consumer';

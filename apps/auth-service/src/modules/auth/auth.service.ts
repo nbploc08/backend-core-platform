@@ -1,6 +1,6 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { NatsService } from '../nats/nats.service';
+import { NatsService } from '@common/core';
 import { RegisterDto } from './dto/register.dto';
 import {
   encrypt,
