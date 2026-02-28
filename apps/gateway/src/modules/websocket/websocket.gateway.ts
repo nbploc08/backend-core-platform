@@ -13,6 +13,11 @@ import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { logger } from '@common/core';
 import { SocketRegistryService } from './socket-registry.service';
+import {
+  WS_NOTIFICATION_READ,
+  WS_NOTIFICATION_READ_ALL,
+  NotificationReadRequestSchema,
+} from '@contracts/core';
 
 /**
  * Payload từ JWT của user (giống như trong UserJwtStrategy)
@@ -225,6 +230,52 @@ export class NotificationWebsocketGateway
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket): void {
     client.emit('pong', { timestamp: Date.now() });
+  }
+
+  /**
+   * Handler cho message 'notification:read' từ client
+   * Dùng khi user đánh dấu đã đọc 1 notification
+   */
+  @SubscribeMessage(WS_NOTIFICATION_READ)
+  handleNotificationRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): void {
+    const socketData = client.data as SocketData | undefined;
+    if (!socketData?.authenticated) {
+      client.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+
+    const parsed = NotificationReadRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      client.emit('error', { message: 'Invalid payload', errors: parsed.error.flatten() });
+      return;
+    }
+
+    logger.info(
+      { userId: socketData.userId, notificationId: parsed.data.notificationId },
+      'User requested to mark notification as read',
+    );
+
+    // TODO: Call notification-service to mark as read (via HTTP or NATS)
+  }
+
+  /**
+   * Handler cho message 'notification:read-all' từ client
+   * Dùng khi user đánh dấu đã đọc tất cả notifications
+   */
+  @SubscribeMessage(WS_NOTIFICATION_READ_ALL)
+  handleNotificationReadAll(@ConnectedSocket() client: Socket): void {
+    const socketData = client.data as SocketData | undefined;
+    if (!socketData?.authenticated) {
+      client.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+
+    logger.info({ userId: socketData.userId }, 'User requested to mark all notifications as read');
+
+    // TODO: Call notification-service to mark all as read (via HTTP or NATS)
   }
 
   /**

@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { NatsModule } from './modules/nats/nats.module';
+import { NatsModule } from '@common/core';
 import { APP_GUARD } from '@nestjs/core';
 import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
 import { JwtModule } from './modules/jwt/jwt.module';
@@ -21,7 +21,10 @@ import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core'
     PrismaModule,
     UsersModule,
     AuthModule,
-    NatsModule,
+    NatsModule.forRoot({
+      serviceName: 'auth-service',
+      streams: [{ name: 'AUTH_EVENT', subjects: ['user.*'] }],
+    }),
     QueueModule,
     RolesModule,
     PermissionModule,

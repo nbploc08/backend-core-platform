@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { NatsModule } from './modules/nats/nats.module';
+import { NatsModule } from '@common/core';
 import { NotificationModule } from './modules/notification/notification.module';
 import { MailsModule } from './modules/mails/mails.module';
 import { JetstreamModule } from './modules/jetstream/jetstream.module';
@@ -19,7 +19,13 @@ import { PrismaModule } from './modules/prisma/prisma.module';
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
     }),
-    NatsModule,
+    NatsModule.forRoot({
+      serviceName: 'notification-service',
+      streams: [
+        { name: 'AUTH_EVENT', subjects: ['user.*'] },
+        { name: 'NOTIFICATION_EVENT', subjects: ['notification.*'] },
+      ],
+    }),
     NotificationModule,
     MailsModule,
     JetstreamModule,

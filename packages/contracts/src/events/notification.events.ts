@@ -6,7 +6,11 @@ export const NotificationCreatedSchema = z.object({
   notificationId: z.string().uuid(),
   userId: z.string().uuid(),
   type: z.string(),
-  createdAt: z.string().datetime(),
+  title: z.string(),
+  body: z.string().optional(),
+  data: z.any().optional(),
+  actionCreatedAt: z.string().datetime(),
+  unreadCount: z.number().int().min(0),
 });
 
 export type NotificationCreatedEvent = z.infer<typeof NotificationCreatedSchema>;
