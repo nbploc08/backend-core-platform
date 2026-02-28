@@ -7,5 +7,6 @@ import { InternalJwtModule } from 'src/modules/internal-jwt/internal-jwt.module'
   imports: [InternalJwtModule],
   controllers: [NotificationController],
   providers: [NotificationService],
+  exports: [NotificationService],
 })
 export class NotificationModule {}

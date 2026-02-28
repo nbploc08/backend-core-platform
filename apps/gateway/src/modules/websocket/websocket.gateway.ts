@@ -11,12 +11,17 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { logger } from '@common/core';
 import { SocketRegistryService } from './socket-registry.service';
+import { NotificationService } from '../client/notification-service/notification/notification.service';
+import { InternalJwtService } from '../internal-jwt/internal-jwt.service';
 import {
   WS_NOTIFICATION_READ,
   WS_NOTIFICATION_READ_ALL,
+  WS_NOTIFICATION_UPDATED,
   NotificationReadRequestSchema,
+  NotificationUpdatedPayload,
 } from '@contracts/core';
 
 /**
@@ -73,8 +78,9 @@ export class NotificationWebsocketGateway
   constructor(
     private readonly socketRegistry: SocketRegistryService,
     private readonly configService: ConfigService,
+    private readonly notificationService: NotificationService,
+    private readonly internalJwtService: InternalJwtService,
   ) {
-    // Lấy config JWT (giống như trong UserJwtStrategy)
     this.jwtSecret = this.configService.get<string>('JWT_SECRET') || 'change-me';
     this.jwtIssuer = this.configService.get<string>('JWT_ISSUER') || 'auth-service';
     this.jwtAudience = this.configService.get<string>('JWT_AUDIENCE') || 'api';
@@ -237,10 +243,10 @@ export class NotificationWebsocketGateway
    * Dùng khi user đánh dấu đã đọc 1 notification
    */
   @SubscribeMessage(WS_NOTIFICATION_READ)
-  handleNotificationRead(
+  async handleNotificationRead(
     @ConnectedSocket() client: Socket,
     @MessageBody() body: unknown,
-  ): void {
+  ): Promise<void> {
     const socketData = client.data as SocketData | undefined;
     if (!socketData?.authenticated) {
       client.emit('error', { message: 'Not authenticated' });
@@ -253,12 +259,29 @@ export class NotificationWebsocketGateway
       return;
     }
 
-    logger.info(
-      { userId: socketData.userId, notificationId: parsed.data.notificationId },
-      'User requested to mark notification as read',
-    );
+    const { notificationId } = parsed.data;
+    const requestId = randomUUID();
+    const internalToken = `Bearer ${this.internalJwtService.signInternalToken({ userId: socketData.userId })}`;
 
-    // TODO: Call notification-service to mark as read (via HTTP or NATS)
+    try {
+      await this.notificationService.markRead(notificationId, internalToken, requestId);
+      const { count } = await this.notificationService.unreadCount(internalToken, requestId);
+
+      const payload: NotificationUpdatedPayload = {
+        action: 'read',
+        notificationId,
+        unreadCount: count,
+      };
+      this.emitToUser(socketData.userId, WS_NOTIFICATION_UPDATED, payload);
+
+      logger.info(
+        { userId: socketData.userId, notificationId, unreadCount: count },
+        'Notification marked as read via WS',
+      );
+    } catch (error) {
+      logger.error({ userId: socketData.userId, notificationId, error }, 'Failed to mark notification as read');
+      client.emit('error', { message: 'Failed to mark notification as read' });
+    }
   }
 
   /**
@@ -266,16 +289,33 @@ export class NotificationWebsocketGateway
    * Dùng khi user đánh dấu đã đọc tất cả notifications
    */
   @SubscribeMessage(WS_NOTIFICATION_READ_ALL)
-  handleNotificationReadAll(@ConnectedSocket() client: Socket): void {
+  async handleNotificationReadAll(@ConnectedSocket() client: Socket): Promise<void> {
     const socketData = client.data as SocketData | undefined;
     if (!socketData?.authenticated) {
       client.emit('error', { message: 'Not authenticated' });
       return;
     }
 
-    logger.info({ userId: socketData.userId }, 'User requested to mark all notifications as read');
+    const requestId = randomUUID();
+    const internalToken = `Bearer ${this.internalJwtService.signInternalToken({ userId: socketData.userId })}`;
 
-    // TODO: Call notification-service to mark all as read (via HTTP or NATS)
+    try {
+      const { updated } = await this.notificationService.readAll(internalToken, requestId);
+
+      const payload: NotificationUpdatedPayload = {
+        action: 'read-all',
+        unreadCount: 0,
+      };
+      this.emitToUser(socketData.userId, WS_NOTIFICATION_UPDATED, payload);
+
+      logger.info(
+        { userId: socketData.userId, updated },
+        'All notifications marked as read via WS',
+      );
+    } catch (error) {
+      logger.error({ userId: socketData.userId, error }, 'Failed to mark all notifications as read');
+      client.emit('error', { message: 'Failed to mark all notifications as read' });
+    }
   }
 
   /**
