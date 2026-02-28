@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '.prisma/auth-client';
 import { runRoleSeed } from './seed/role.seed';
 import { runUserSeed } from './seed/user.seed';
 

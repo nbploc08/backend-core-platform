@@ -23,9 +23,7 @@ import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core'
     AuthModule,
     NatsModule.forRoot({
       serviceName: 'auth-service',
-      streams: [
-        { name: 'AUTH_EVENT', subjects: ['user.*', 'notification.*'] },
-      ],
+      streams: [{ name: 'AUTH_EVENT', subjects: ['user.*'] }],
     }),
     QueueModule,
     RolesModule,

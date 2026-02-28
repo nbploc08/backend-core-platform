@@ -106,8 +106,8 @@ export class AuthService {
 
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
 
-    // await this.natsService.publish(USER_REGISTERED, validatedPayload);
-    await this.queueService.sendVerifyCode(validatedPayload);
+    await this.natsService.publish(USER_REGISTERED, validatedPayload);
+    // await this.queueService.sendVerifyCode(validatedPayload);
 
     logger.info(
       {

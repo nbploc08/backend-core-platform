@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '.prisma/auth-client';
 import * as argon2 from 'argon2';
 
 const SEED_ADMIN_EMAIL = 'admin@example.com';

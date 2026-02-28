@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '.prisma/auth-client';
 
 export async function runRoleSeed(prisma: PrismaClient) {
   // 1. Permissions
