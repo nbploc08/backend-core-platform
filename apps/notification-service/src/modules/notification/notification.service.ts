@@ -30,6 +30,7 @@ export class NotificationService {
         data: payLoad.data,
       },
     });
+    const unreadCount = await this.unreadCount(noti.userId);
 
     const eventPayload = {
       notificationId: noti.id,
@@ -39,6 +40,7 @@ export class NotificationService {
       body: noti.body,
       data: noti.data,
       actionCreatedAt: payLoad.data?.actionCreatedAt ?? new Date().toISOString(),
+      unreadCount: unreadCount.count,
     };
     const validatedPayload = NotificationCreatedSchema.parse(eventPayload);
     await this.natsService.publish(NOTIFICATION_CREATED, validatedPayload);

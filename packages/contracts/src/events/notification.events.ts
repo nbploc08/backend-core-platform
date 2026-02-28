@@ -10,6 +10,7 @@ export const NotificationCreatedSchema = z.object({
   body: z.string().optional(),
   data: z.any().optional(),
   actionCreatedAt: z.string().datetime(),
+  unreadCount: z.number().int().min(0),
 });
 
 export type NotificationCreatedEvent = z.infer<typeof NotificationCreatedSchema>;
