@@ -5,7 +5,7 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
   encrypt,

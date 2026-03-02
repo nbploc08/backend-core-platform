@@ -3,9 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/users.module';
+import { UsersModule } from 'src/modules/users/users.module';
 import { LocalStrategy } from './passport/local.strategy';
-import { QueueModule } from '../queue/queue.module';
+import { QueueModule } from 'src/modules/queue/queue.module';
 
 @Module({
   imports: [

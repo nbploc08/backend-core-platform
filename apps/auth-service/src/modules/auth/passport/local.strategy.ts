@@ -1,7 +1,7 @@
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { UsersService } from '../../users/users.service';
+import { UsersService } from 'src/modules/users/users.service';
 import { ErrorCodes, logger, ServiceError } from '@common/core';
 
 @Injectable()

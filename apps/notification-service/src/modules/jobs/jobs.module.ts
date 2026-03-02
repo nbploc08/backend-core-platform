@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { JobsController } from './jobs.controller';
 import { BullModule, BullRootModuleOptions } from '@nestjs/bullmq';
-import { MailsModule } from '../mails/mails.module';
+import { MailsModule } from 'src/modules/mails/mails.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JetstreamConsumerService } from './jetstream-consumer.service';
-import { NotificationModule } from '../notification/notification.module';
+import { NotificationModule } from 'src/modules/notification/notification.module';
 
 @Module({
   imports: [NotificationModule],

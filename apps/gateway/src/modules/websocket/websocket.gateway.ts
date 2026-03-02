@@ -5,110 +5,64 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
-  MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
-import { randomUUID } from 'crypto';
 import { logger } from '@common/core';
 import { SocketRegistryService } from './socket-registry.service';
-import { NotificationService } from '../client/notification-service/notification/notification.service';
-import { InternalJwtService } from '../internal-jwt/internal-jwt.service';
-import {
-  WS_NOTIFICATION_READ,
-  WS_NOTIFICATION_READ_ALL,
-  WS_NOTIFICATION_UPDATED,
-  NotificationReadRequestSchema,
-  NotificationUpdatedPayload,
-} from '@contracts/core';
 
-/**
- * Payload từ JWT của user (giống như trong UserJwtStrategy)
- */
-interface JwtPayload {
-  sub: string; // userId
+export interface JwtPayload {
+  sub: string;
   email: string;
   permVersion: number;
   iat: number;
   exp: number;
 }
 
-/**
- * Dữ liệu được attach vào socket sau khi auth thành công
- */
-interface SocketData {
+export interface SocketData {
   userId: string;
   email: string;
   authenticated: boolean;
 }
 
-/**
- * WebSocket Gateway - Điểm vào cho tất cả kết nối WebSocket
- *
- * @WebSocketGateway() decorator config:
- * - cors: cho phép frontend từ domain khác kết nối
- * - namespace: (optional) tách biệt các loại WS connections
- *
- * Implements 3 interfaces:
- * - OnGatewayInit: Gọi khi WS server khởi tạo xong
- * - OnGatewayConnection: Gọi khi có client kết nối
- * - OnGatewayDisconnect: Gọi khi client ngắt kết nối
- */
-@WebSocketGateway({
+export const WS_GATEWAY_OPTIONS = {
   cors: {
-    origin: '*', // Production: thay bằng domain cụ thể
+    origin: '*',
     credentials: true,
   },
-  // namespace: '/notifications', // Có thể thêm namespace nếu cần
-})
-export class NotificationWebsocketGateway
+};
+
+@WebSocketGateway(WS_GATEWAY_OPTIONS)
+export class CoreWebsocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  // Server instance - dùng để emit events đến clients
   @WebSocketServer()
   server: Server;
 
-  // JWT secret để verify token
   private readonly jwtSecret: string;
   private readonly jwtIssuer: string;
   private readonly jwtAudience: string;
 
+  private readonly rateLimits = new Map<string, { count: number; resetAt: number }>();
+  private static readonly MAX_MESSAGES_PER_SECOND = 10;
+
   constructor(
     private readonly socketRegistry: SocketRegistryService,
     private readonly configService: ConfigService,
-    private readonly notificationService: NotificationService,
-    private readonly internalJwtService: InternalJwtService,
   ) {
     this.jwtSecret = this.configService.get<string>('JWT_SECRET') || 'change-me';
     this.jwtIssuer = this.configService.get<string>('JWT_ISSUER') || 'auth-service';
     this.jwtAudience = this.configService.get<string>('JWT_AUDIENCE') || 'api';
   }
 
-  /**
-   * Gọi sau khi WebSocket server khởi tạo xong
-   */
   afterInit() {
     logger.info('WebSocket Gateway initialized');
   }
 
-  /**
-   * Gọi khi có client kết nối
-   *
-   * Flow xác thực:
-   * 1. Client kết nối với token trong query hoặc header
-   * 2. Server verify JWT
-   * 3. Nếu OK: đăng ký vào registry, cho phép nhận events
-   * 4. Nếu fail: ngắt kết nối
-   *
-   * @param client - Socket instance của client
-   */
   async handleConnection(client: Socket) {
     try {
-      // Lấy token từ query string hoặc header
-      // Client có thể gửi: ws://localhost:3000?token=xxx
-      // Hoặc trong header: Authorization: Bearer xxx
       const token = this.extractToken(client);
 
       if (!token) {
@@ -118,7 +72,6 @@ export class NotificationWebsocketGateway
         return;
       }
 
-      // Verify JWT
       const payload = this.verifyToken(token);
 
       if (!payload) {
@@ -128,7 +81,6 @@ export class NotificationWebsocketGateway
         return;
       }
 
-      // Auth thành công - lưu thông tin user vào socket
       const socketData: SocketData = {
         userId: payload.sub,
         email: payload.email,
@@ -136,10 +88,8 @@ export class NotificationWebsocketGateway
       };
       client.data = socketData;
 
-      // Đăng ký vào registry
       this.socketRegistry.register(payload.sub, client.id);
 
-      // Thông báo cho client biết đã auth thành công
       client.emit('authenticated', {
         userId: payload.sub,
         message: 'Connected successfully',
@@ -161,15 +111,14 @@ export class NotificationWebsocketGateway
     }
   }
 
-  /**
-   * Gọi khi client ngắt kết nối
-   */
   handleDisconnect(client: Socket) {
-    // Lấy userId từ socket data (nếu đã auth)
     const socketData = client.data as SocketData | undefined;
 
-    // Hủy đăng ký khỏi registry
     this.socketRegistry.unregister(client.id);
+
+    if (socketData?.userId && !this.socketRegistry.isUserOnline(socketData.userId)) {
+      this.rateLimits.delete(socketData.userId);
+    }
 
     logger.info(
       {
@@ -182,27 +131,17 @@ export class NotificationWebsocketGateway
     );
   }
 
-  /**
-   * Lấy token từ client connection
-   * Hỗ trợ nhiều cách gửi token:
-   * 1. Query string: ?token=xxx
-   * 2. Auth header: Authorization: Bearer xxx
-   * 3. Handshake auth: socket.io auth object
-   */
   private extractToken(client: Socket): string | null {
-    // Cách 1: Query string
     const queryToken = client.handshake.query.token;
     if (queryToken && typeof queryToken === 'string') {
       return queryToken;
     }
 
-    // Cách 2: Authorization header
     const authHeader = client.handshake.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       return authHeader.slice(7);
     }
 
-    // Cách 3: Socket.io auth object (client gửi trong options)
     const authToken = client.handshake.auth?.token;
     if (authToken && typeof authToken === 'string') {
       return authToken;
@@ -211,10 +150,6 @@ export class NotificationWebsocketGateway
     return null;
   }
 
-  /**
-   * Verify JWT token
-   * @returns payload nếu valid, null nếu invalid
-   */
   private verifyToken(token: string): JwtPayload | null {
     try {
       const payload = jwt.verify(token, this.jwtSecret, {
@@ -230,101 +165,33 @@ export class NotificationWebsocketGateway
   }
 
   /**
-   * Handler cho message 'ping' từ client
-   * Dùng để test connection và giữ connection alive
+   * Public — các module khác gọi để kiểm tra rate limit trước khi xử lý WS message.
+   * Trả true nếu cho phép, false nếu vượt giới hạn.
    */
+  checkRateLimit(userId: string): boolean {
+    const now = Date.now();
+    const limit = this.rateLimits.get(userId);
+
+    if (!limit || now > limit.resetAt) {
+      this.rateLimits.set(userId, { count: 1, resetAt: now + 1000 });
+      return true;
+    }
+
+    if (limit.count >= CoreWebsocketGateway.MAX_MESSAGES_PER_SECOND) {
+      return false;
+    }
+
+    limit.count++;
+    return true;
+  }
+
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket): void {
     client.emit('pong', { timestamp: Date.now() });
   }
 
   /**
-   * Handler cho message 'notification:read' từ client
-   * Dùng khi user đánh dấu đã đọc 1 notification
-   */
-  @SubscribeMessage(WS_NOTIFICATION_READ)
-  async handleNotificationRead(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() body: unknown,
-  ): Promise<void> {
-    const socketData = client.data as SocketData | undefined;
-    if (!socketData?.authenticated) {
-      client.emit('error', { message: 'Not authenticated' });
-      return;
-    }
-
-    const parsed = NotificationReadRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      client.emit('error', { message: 'Invalid payload', errors: parsed.error.flatten() });
-      return;
-    }
-
-    const { notificationId } = parsed.data;
-    const requestId = randomUUID();
-    const internalToken = `Bearer ${this.internalJwtService.signInternalToken({ userId: socketData.userId })}`;
-
-    try {
-      await this.notificationService.markRead(notificationId, internalToken, requestId);
-      const { count } = await this.notificationService.unreadCount(internalToken, requestId);
-
-      const payload: NotificationUpdatedPayload = {
-        action: 'read',
-        notificationId,
-        unreadCount: count,
-      };
-      this.emitToUser(socketData.userId, WS_NOTIFICATION_UPDATED, payload);
-
-      logger.info(
-        { userId: socketData.userId, notificationId, unreadCount: count },
-        'Notification marked as read via WS',
-      );
-    } catch (error) {
-      logger.error({ userId: socketData.userId, notificationId, error }, 'Failed to mark notification as read');
-      client.emit('error', { message: 'Failed to mark notification as read' });
-    }
-  }
-
-  /**
-   * Handler cho message 'notification:read-all' từ client
-   * Dùng khi user đánh dấu đã đọc tất cả notifications
-   */
-  @SubscribeMessage(WS_NOTIFICATION_READ_ALL)
-  async handleNotificationReadAll(@ConnectedSocket() client: Socket): Promise<void> {
-    const socketData = client.data as SocketData | undefined;
-    if (!socketData?.authenticated) {
-      client.emit('error', { message: 'Not authenticated' });
-      return;
-    }
-
-    const requestId = randomUUID();
-    const internalToken = `Bearer ${this.internalJwtService.signInternalToken({ userId: socketData.userId })}`;
-
-    try {
-      const { updated } = await this.notificationService.readAll(internalToken, requestId);
-
-      const payload: NotificationUpdatedPayload = {
-        action: 'read-all',
-        unreadCount: 0,
-      };
-      this.emitToUser(socketData.userId, WS_NOTIFICATION_UPDATED, payload);
-
-      logger.info(
-        { userId: socketData.userId, updated },
-        'All notifications marked as read via WS',
-      );
-    } catch (error) {
-      logger.error({ userId: socketData.userId, error }, 'Failed to mark all notifications as read');
-      client.emit('error', { message: 'Failed to mark all notifications as read' });
-    }
-  }
-
-  /**
-   * Gửi event đến tất cả sockets của một user
-   * Dùng khi cần push notification đến user
-   *
-   * @param userId - ID của user cần gửi
-   * @param event - Tên event
-   * @param data - Dữ liệu gửi kèm
+   * Public — gửi event đến tất cả sockets của một user (multi-tab broadcast).
    */
   emitToUser(userId: string, event: string, data: any): void {
     const socketIds = this.socketRegistry.getSocketsByUser(userId);
@@ -342,8 +209,7 @@ export class NotificationWebsocketGateway
   }
 
   /**
-   * Broadcast event đến tất cả connected clients
-   * Dùng cho system-wide announcements
+   * Public — broadcast event đến tất cả connected clients.
    */
   broadcast(event: string, data: any): void {
     this.server.emit(event, data);

@@ -17,7 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { Cookies, Info, Public, User } from '@common/core';
-import type { UserInterface } from '../../entities/user.entities';
+import type { UserInterface } from 'src/entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
   return s
