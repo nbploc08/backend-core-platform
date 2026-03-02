@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:ws-load": "tsx test/ws/load-test.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -69,7 +70,9 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.0"
   },
   "jest": {
     "moduleFileExtensions": [
