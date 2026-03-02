@@ -1,18 +1,17 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { NatsService, BaseJetstreamConsumer, ConsumerConfig, logger } from '@common/core';
 import {
   NotificationCreatedSchema,
   WS_NOTIFICATION_NEW,
   NotificationNewPayload,
 } from '@contracts/core';
-import { NotificationWebsocketGateway } from '../websocket/websocket.gateway';
+import { CoreWebsocketGateway } from '../../../../websocket/websocket.gateway';
 
 @Injectable()
-export class JetstreamConsumerService extends BaseJetstreamConsumer {
+export class NotificationJetstreamConsumer extends BaseJetstreamConsumer {
   constructor(
     natsService: NatsService,
-    @Inject(forwardRef(() => NotificationWebsocketGateway))
-    private readonly wsGateway: NotificationWebsocketGateway,
+    private readonly wsGateway: CoreWebsocketGateway,
   ) {
     super(natsService);
   }

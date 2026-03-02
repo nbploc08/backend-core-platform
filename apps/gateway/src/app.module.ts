@@ -11,7 +11,6 @@ import { NotificationModule } from './modules/client/notification-service/notifi
 import { NatsModule, PermissionGuard, PermissionModule } from '@common/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { WebsocketModule } from './modules/websocket';
-import { JetstreamModule } from './modules/jetstream/jetstream.module';
 
 @Module({
   imports: [
@@ -26,7 +25,6 @@ import { JetstreamModule } from './modules/jetstream/jetstream.module';
     PermissionModule,
     PrismaModule,
     WebsocketModule,
-    JetstreamModule,
     NatsModule.forRoot({
       serviceName: 'gateway-service',
       streams: [
