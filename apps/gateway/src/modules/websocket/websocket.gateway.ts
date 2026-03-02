@@ -70,10 +70,12 @@ export class NotificationWebsocketGateway
   @WebSocketServer()
   server: Server;
 
-  // JWT secret để verify token
   private readonly jwtSecret: string;
   private readonly jwtIssuer: string;
   private readonly jwtAudience: string;
+
+  private readonly rateLimits = new Map<string, { count: number; resetAt: number }>();
+  private static readonly MAX_MESSAGES_PER_SECOND = 10;
 
   constructor(
     private readonly socketRegistry: SocketRegistryService,
@@ -165,11 +167,13 @@ export class NotificationWebsocketGateway
    * Gọi khi client ngắt kết nối
    */
   handleDisconnect(client: Socket) {
-    // Lấy userId từ socket data (nếu đã auth)
     const socketData = client.data as SocketData | undefined;
 
-    // Hủy đăng ký khỏi registry
     this.socketRegistry.unregister(client.id);
+
+    if (socketData?.userId && !this.socketRegistry.isUserOnline(socketData.userId)) {
+      this.rateLimits.delete(socketData.userId);
+    }
 
     logger.info(
       {
@@ -229,6 +233,23 @@ export class NotificationWebsocketGateway
     }
   }
 
+  private checkRateLimit(userId: string): boolean {
+    const now = Date.now();
+    const limit = this.rateLimits.get(userId);
+
+    if (!limit || now > limit.resetAt) {
+      this.rateLimits.set(userId, { count: 1, resetAt: now + 1000 });
+      return true;
+    }
+
+    if (limit.count >= NotificationWebsocketGateway.MAX_MESSAGES_PER_SECOND) {
+      return false;
+    }
+
+    limit.count++;
+    return true;
+  }
+
   /**
    * Handler cho message 'ping' từ client
    * Dùng để test connection và giữ connection alive
@@ -250,6 +271,11 @@ export class NotificationWebsocketGateway
     const socketData = client.data as SocketData | undefined;
     if (!socketData?.authenticated) {
       client.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+
+    if (!this.checkRateLimit(socketData.userId)) {
+      client.emit('error', { message: 'Rate limit exceeded, please slow down' });
       return;
     }
 
@@ -293,6 +319,11 @@ export class NotificationWebsocketGateway
     const socketData = client.data as SocketData | undefined;
     if (!socketData?.authenticated) {
       client.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+
+    if (!this.checkRateLimit(socketData.userId)) {
+      client.emit('error', { message: 'Rate limit exceeded, please slow down' });
       return;
     }
 
