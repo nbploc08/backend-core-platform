@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { NatsService, BaseJetstreamConsumer, ConsumerConfig } from '@common/core';
 import { UserRegisteredSchema } from '@contracts/core';
-import { NotificationService } from '../notification/notification.service';
+import { NotificationService } from 'src/modules/notification/notification.service';
 
 @Injectable()
 export class JetstreamConsumerService extends BaseJetstreamConsumer {

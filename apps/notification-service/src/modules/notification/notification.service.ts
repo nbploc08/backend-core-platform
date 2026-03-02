@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from 'src/modules/notification/dto/create-notification.dto';
 import { UserRegisteredEventDto } from './dto/userRegisteredEvent.dto';
-import { MailsService } from '../mails/mails.service';
+import { MailsService } from 'src/modules/mails/mails.service';
 import { decrypt, getEncryptKey, logger, ServiceError, ErrorCodes } from '@common/core';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { NOTIFICATION_CREATED, NotificationCreatedSchema, USER_REGISTERED } from '@contracts/core';
 import { NatsService } from '@common/core';
 @Injectable()

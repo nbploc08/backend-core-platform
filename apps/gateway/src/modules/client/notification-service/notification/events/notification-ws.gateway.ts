@@ -14,9 +14,9 @@ import {
   NotificationReadRequestSchema,
   NotificationUpdatedPayload,
 } from '@contracts/core';
-import { CoreWebsocketGateway, SocketData, WS_GATEWAY_OPTIONS } from '../../../../websocket/websocket.gateway';
-import { InternalJwtService } from '../../../../internal-jwt/internal-jwt.service';
-import { NotificationService } from '../notification.service';
+import { CoreWebsocketGateway, SocketData, WS_GATEWAY_OPTIONS } from 'src/modules/websocket/websocket.gateway';
+import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
+import { NotificationService } from 'src/modules/client/notification-service/notification/notification.service';
 
 @WebSocketGateway(WS_GATEWAY_OPTIONS)
 export class NotificationWsGateway {

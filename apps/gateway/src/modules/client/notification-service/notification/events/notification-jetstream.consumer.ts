@@ -5,7 +5,7 @@ import {
   WS_NOTIFICATION_NEW,
   NotificationNewPayload,
 } from '@contracts/core';
-import { CoreWebsocketGateway } from '../../../../websocket/websocket.gateway';
+import { CoreWebsocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 @Injectable()
 export class NotificationJetstreamConsumer extends BaseJetstreamConsumer {

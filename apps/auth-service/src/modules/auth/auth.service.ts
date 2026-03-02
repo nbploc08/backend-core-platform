@@ -1,5 +1,5 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from 'src/modules/users/users.service';
 import { NatsService } from '@common/core';
 import { RegisterDto } from './dto/register.dto';
 import {
@@ -16,10 +16,10 @@ import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { loginResponseDto } from './dto/loginRes.dto';
 import { UAParser } from 'ua-parser-js';
 import { randomUUID } from 'crypto';
-import { UserInterface } from '../../entities/user.entities';
+import { UserInterface } from 'src/entities/user.entities';
 import { JwtService } from '@nestjs/jwt';
-import { InfoUserDto } from '../users/dto/infoUser.dto';
-import { QueueService } from '../queue/queue.service';
+import { InfoUserDto } from 'src/modules/users/dto/infoUser.dto';
+import { QueueService } from 'src/modules/queue/queue.service';
 import { PASSWORD_RESET_REQUESTED, PasswordResetRequestedSchema } from '@contracts/core';
 @Injectable()
 export class AuthService {

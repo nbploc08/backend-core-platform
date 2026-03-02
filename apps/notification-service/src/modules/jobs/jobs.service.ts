@@ -1,6 +1,6 @@
 import { Job, Queue } from 'bullmq';
 import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
-import { MailsService } from '../mails/mails.service';
+import { MailsService } from 'src/modules/mails/mails.service';
 import { decrypt, ErrorCodes, getEncryptKey, logger, ServiceError } from '@common/core';
 import { HttpStatus, OnModuleInit } from '@nestjs/common';
 import { PASSWORD_RESET_REQUESTED } from '@contracts/core';
