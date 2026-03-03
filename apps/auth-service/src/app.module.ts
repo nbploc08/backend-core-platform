@@ -11,7 +11,7 @@ import { CombinedJwtAuthGuard } from './modules/jwt/strategy/jwt-auth.guard';
 import { JwtModule } from './modules/jwt/jwt.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { RolesModule } from './modules/roles/roles.module';
-import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core';
+import { PermissionGuard, PermissionModule, RateLimiterGuard, RateLimiterModule, TokenTypeGuard } from '@common/core';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,7 +28,8 @@ import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core'
     QueueModule,
     RolesModule,
     PermissionModule,
-    JwtModule, // Đăng ký CombinedJwtStrategy và InternalJwtStrategy
+    RateLimiterModule.register(),
+    JwtModule,
   ],
   controllers: [AppController],
   providers: [
@@ -38,12 +39,16 @@ import { PermissionGuard, PermissionModule, TokenTypeGuard } from '@common/core'
       useClass: CombinedJwtAuthGuard,
     },
     {
-      provide: APP_GUARD, //
-      useClass: PermissionGuard, // Permission check
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard,
     },
     {
       provide: APP_GUARD,
-      useClass: TokenTypeGuard, // Internal only check
+      useClass: PermissionGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TokenTypeGuard,
     },
   ],
 })

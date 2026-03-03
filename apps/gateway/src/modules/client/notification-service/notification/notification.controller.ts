@@ -1,9 +1,10 @@
 import { Controller, Get, Post, Body, Param, Query, Headers, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { Public } from '@common/core';
+import { Public, RateLimit } from '@common/core';
 
 @Controller('client/notification')
+@RateLimit({ prefix: 'api:notification', limit: 60, window: 60, keySource: 'userId' })
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
   @Public()
@@ -13,6 +14,7 @@ export class NotificationController {
   }
 
   @Post()
+  @RateLimit({ prefix: 'api:notification:create', limit: 10, window: 60, keySource: 'userId' })
   create(
     @Body() createNotificationDto: CreateNotificationDto,
     @Headers('authorization') auth: string,
@@ -39,11 +41,13 @@ export class NotificationController {
   }
 
   @Post(':id/read')
+  @RateLimit({ prefix: 'api:notification:read', limit: 30, window: 60, keySource: 'userId' })
   markRead(@Param('id') id: string, @Headers('authorization') auth: string, @Req() req: any) {
     return this.notificationService.markRead(id, auth, req.requestId);
   }
 
   @Post('read-all')
+  @RateLimit({ prefix: 'api:notification:read-all', limit: 10, window: 60, keySource: 'userId' })
   readAll(@Headers('authorization') auth: string, @Req() req: any) {
     return this.notificationService.readAll(auth, req.requestId);
   }

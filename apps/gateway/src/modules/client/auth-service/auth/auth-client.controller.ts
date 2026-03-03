@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { Cookies, Public, User } from '@common/core';
+import { Cookies, Public, RateLimit, User } from '@common/core';
 import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
 
@@ -38,6 +38,10 @@ export class AuthClientController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'login:ip', limit: 10, window: 60, keySource: 'ip' },
+    { prefix: 'login:email', limit: 5, window: 60, keySource: 'body.email' },
+  ])
   async login(
     @Body() loginDto: { email?: string; password?: string; username?: string },
     @Req() req: Request & { requestId?: string },
@@ -49,6 +53,7 @@ export class AuthClientController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @RateLimit({ prefix: 'register:ip', limit: 5, window: 60, keySource: 'ip' })
   async register(
     @Body() registerDto: Record<string, unknown>,
     @Req() req: Request & { requestId?: string },
@@ -80,6 +85,10 @@ export class AuthClientController {
   @Public()
   @Post('resend-code')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'resend:ip', limit: 5, window: 60, keySource: 'ip' },
+    { prefix: 'resend:email', limit: 2, window: 60, keySource: 'body.email' },
+  ])
   async resendCode(@Body('email') email: string, @Req() req: Request & { requestId?: string }) {
     return this.authClient.resendCode(email, getRequestId(req));
   }
@@ -87,6 +96,7 @@ export class AuthClientController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'refresh:ip', limit: 20, window: 60, keySource: 'ip' })
   async refresh(
     @Cookies('refreshToken') refreshToken: string,
     @Cookies('deviceId') deviceId: string,
@@ -133,6 +143,10 @@ export class AuthClientController {
   @Public()
   @Post('forgot/password')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'forgot:ip', limit: 5, window: 600, keySource: 'ip' },
+    { prefix: 'forgot:email', limit: 2, window: 600, keySource: 'body.email' },
+  ])
   async forgotPassword(
     @Body() forgotPasswordDto: { email: string },
     @Req() req: Request & { requestId?: string },
@@ -143,6 +157,7 @@ export class AuthClientController {
   @Public()
   @Post('forgot/password/verify')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'forgot-verify:ip', limit: 10, window: 600, keySource: 'ip' })
   async forgotPasswordVerify(
     @Body() forgotPasswordVerifyDto: { email: string; code: string },
     @Req() req: Request & { requestId?: string },
@@ -152,6 +167,7 @@ export class AuthClientController {
   @Public()
   @Post('forgot/password/reset')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'forgot-reset:ip', limit: 5, window: 600, keySource: 'ip' })
   async forgotPasswordReset(
     @Body() forgotPasswordResetDto: { email: string; code: string; password: string },
     @Req() req: Request & { requestId?: string },

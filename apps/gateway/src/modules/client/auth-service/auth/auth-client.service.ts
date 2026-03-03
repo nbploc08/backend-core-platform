@@ -341,6 +341,9 @@ export class AuthClientService {
       const response = await this.client.post<any>(
         'auth/internal/forgot/password/reset',
         forgotPasswordResetDto,
+        {
+          headers: this.getHeaders(requestId),
+        },
       );
       return response.data;
     } catch (err: unknown) {

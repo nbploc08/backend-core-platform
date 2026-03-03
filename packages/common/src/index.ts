@@ -28,3 +28,5 @@ export * from './nats/nats.module';
 export * from './nats/nats.interfaces';
 export * from './nats/nats.constants';
 export * from './nats/base-jetstream-consumer';
+
+export * from './rate-limiter';

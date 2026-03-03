@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
+import { RateLimit } from '@common/core';
 import { RoleClientService } from './role-client.service';
 function getRequestId(req: Request & { requestId?: string }): string {
   const rid = req.requestId ?? req.headers['x-request-id'];
@@ -21,11 +22,13 @@ function getRequestId(req: Request & { requestId?: string }): string {
 
 @Controller('client/roles')
 @UseGuards(JwtAuthGuard)
+@RateLimit({ prefix: 'api:roles', limit: 60, window: 60, keySource: 'userId' })
 export class RoleClientController {
   constructor(private readonly roleClient: RoleClientService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @RateLimit({ prefix: 'api:roles:create', limit: 10, window: 60, keySource: 'userId' })
   async create(
     @Body() createRoleDto: { name: string; description?: string; permissionIds?: string[] },
     @Req() req: Request & { requestId?: string },
@@ -85,6 +88,7 @@ export class RoleClientController {
 
   @Post('assign-role')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'api:roles:assign', limit: 10, window: 60, keySource: 'userId' })
   async assignRole(
     @Body() dto: { userId: string; roleName: string },
     @Req() req: Request & { requestId?: string },
@@ -94,6 +98,7 @@ export class RoleClientController {
 
   @Post('unassign-role')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'api:roles:unassign', limit: 10, window: 60, keySource: 'userId' })
   async unassignRole(
     @Body() dto: { userId: string; roleName: string },
     @Req() req: Request & { requestId?: string },
