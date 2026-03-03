@@ -20,6 +20,9 @@ type ErrorBody = { error?: { code?: string; message?: string }; [k: string]: unk
  * @throws ServiceError
  */
 export function handleAxiosError(err: unknown, defaultMessage = 'Request failed'): never {
+  if (err instanceof ServiceError) {
+    throw err;
+  }
   if (isAxiosLike(err)) {
     const status = err.response?.status ?? 500;
     const body = err.response?.data as ErrorBody | undefined;
