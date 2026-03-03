@@ -16,7 +16,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegisterDto } from './dto/verifyRegister.dto';
 import { LocalAuthGuard } from './passport/local-auth.guard';
-import { Cookies, Info, Public, User } from '@common/core';
+import { Cookies, Info, Public, RateLimit, User } from '@common/core';
 import type { UserInterface } from 'src/entities/user.entities';
 
 function escapeHtmlAttr(s: string): string {
@@ -40,6 +40,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @RateLimit({ prefix: 'auth:register:ip', limit: 5, window: 60, keySource: 'ip' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -59,6 +60,10 @@ export class AuthController {
   @Public()
   @Post('resend-code')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'auth:resend:ip', limit: 5, window: 60, keySource: 'ip' },
+    { prefix: 'auth:resend:email', limit: 2, window: 60, keySource: 'body.email' },
+  ])
   async resend(@Body('email') email: string) {
     return this.authService.resendCode(email);
   }
@@ -67,12 +72,17 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'auth:login:ip', limit: 10, window: 60, keySource: 'ip' },
+    { prefix: 'auth:login:email', limit: 5, window: 60, keySource: 'body.email' },
+  ])
   async login(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(req.user, res, req);
   }
   @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'auth:refresh:ip', limit: 20, window: 60, keySource: 'ip' })
   async refresh(
     @Cookies('refreshToken') refreshToken: string,
     @Cookies('deviceId') deviceId: string,
@@ -108,16 +118,22 @@ export class AuthController {
 
   @Post('forgot/password')
   @HttpCode(HttpStatus.OK)
+  @RateLimit([
+    { prefix: 'auth:forgot:ip', limit: 5, window: 600, keySource: 'ip' },
+    { prefix: 'auth:forgot:email', limit: 2, window: 600, keySource: 'body.email' },
+  ])
   async forgotPassword(@Body() forgotPasswordDto: { email: string }) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
   @Post('forgot/password/verify')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'auth:forgot-verify:ip', limit: 10, window: 600, keySource: 'ip' })
   async forgotPasswordVerify(@Body() forgotPasswordVerifyDto: { email: string; code: string }) {
     return this.authService.forgotPasswordVerify(forgotPasswordVerifyDto);
   }
   @Post('forgot/password/reset')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ prefix: 'auth:forgot-reset:ip', limit: 5, window: 600, keySource: 'ip' })
   async forgotPasswordReset(
     @Body() forgotPasswordResetDto: { email: string; code: string; password: string },
   ) {

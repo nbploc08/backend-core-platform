@@ -8,7 +8,7 @@ import { JwtAuthGuard } from './modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientModule } from './modules/client/auth-service/auth/auth-client.module';
 import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
 import { NotificationModule } from './modules/client/notification-service/notification/notification.module';
-import { NatsModule, PermissionGuard, PermissionModule } from '@common/core';
+import { NatsModule, PermissionGuard, PermissionModule, RateLimiterGuard, RateLimiterModule } from '@common/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { WebsocketModule } from './modules/websocket';
 
@@ -23,6 +23,7 @@ import { WebsocketModule } from './modules/websocket';
     RoleClientModule,
     NotificationModule,
     PermissionModule,
+    RateLimiterModule.register(),
     PrismaModule,
     WebsocketModule,
     NatsModule.forRoot({
@@ -40,8 +41,12 @@ import { WebsocketModule } from './modules/websocket';
       useClass: JwtAuthGuard,
     },
     {
-      provide: APP_GUARD, //
-      useClass: PermissionGuard, // Permission check
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
     },
   ],
 })
