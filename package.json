@@ -8,10 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev:gateway": "npm --workspace apps/gateway run start:dev",
     "dev:auth-service": "npm --workspace apps/auth-service run start:dev",
     "dev:notification-service": "npm --workspace apps/notification-service run start:dev",
+    "build:packages": "npm --workspace packages/contracts run build && npm --workspace packages/common run build",
+    "build:apps": "npm --workspace apps/auth-service run build && npm --workspace apps/gateway run build && npm --workspace apps/notification-service run build",
+    "build": "npm run build:packages && npm run build:apps",
+    "test": "npm --workspace apps/auth-service run test -- --passWithNoTests && npm --workspace apps/gateway run test -- --passWithNoTests && npm --workspace apps/notification-service run test -- --passWithNoTests",
+    "test:e2e": "npm --workspace apps/auth-service run test:e2e -- --passWithNoTests && npm --workspace apps/gateway run test:e2e -- --passWithNoTests && npm --workspace apps/notification-service run test:e2e -- --passWithNoTests",
     "test:ws-load": "npm --workspace apps/gateway run test:ws-load",
     "format": "prettier . --write",
     "lint": "eslint .",
