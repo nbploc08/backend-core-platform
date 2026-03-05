@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      REDIS_URL: redis://localhost:6379
+      NATS_URL: nats://localhost:4222
+      JWT_SECRET: ci-test-jwt-secret
+      JWT_ISSUER: ci-test
+      JWT_AUDIENCE: ci-test
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      INTERNAL_JWT_SECRET: ci-test-internal-jwt-secret
+      INTERNAL_JWT_ISSUER: ci-test-internal
+      INTERNAL_JWT_AUDIENCE: ci-test-internal
+      ENCRYPT_KEY: ci-test-encrypt-key-32chars!!
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Start NATS with JetStream
+        run: |
+          docker run -d --name nats \
+            -p 4222:4222 \
+            -p 8222:8222 \
+            nats:2.10 -js -m 8222
+          # Wait for NATS to be ready
+          for i in $(seq 1 10); do
+            curl -sf http://localhost:8222/healthz > /dev/null 2>&1 && break
+            echo "Waiting for NATS... ($i/10)"
+            sleep 1
+          done
+          echo "NATS is ready"
+
+      - name: Create database schemas
+        run: |
+          PGPASSWORD=test psql -h localhost -U test -d testdb -c "CREATE SCHEMA IF NOT EXISTS auth;"
+          PGPASSWORD=test psql -h localhost -U test -d testdb -c "CREATE SCHEMA IF NOT EXISTS notification;"
+          PGPASSWORD=test psql -h localhost -U test -d testdb -c "CREATE SCHEMA IF NOT EXISTS gateway;"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: |
+          npm --workspace packages/contracts run build
+          npm --workspace packages/common run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run Prisma migrations
+        run: |
+          (cd apps/auth-service && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=auth" npx prisma migrate deploy)
+          (cd apps/notification-service && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=notification" npx prisma migrate deploy)
+          (cd apps/gateway && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=gateway" npx prisma migrate deploy)
+
+      - name: Unit tests
+        run: |
+          npm --workspace apps/auth-service run test -- --passWithNoTests
+          npm --workspace apps/gateway run test -- --passWithNoTests
+          npm --workspace apps/notification-service run test -- --passWithNoTests
+
+      - name: E2E tests
+        run: |
+          (cd apps/auth-service && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=auth" npm run test:e2e -- --passWithNoTests)
+          (cd apps/gateway && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=gateway" npm run test:e2e -- --passWithNoTests)
+          (cd apps/notification-service && DATABASE_URL="postgresql://test:test@localhost:5432/testdb?schema=notification" npm run test:e2e -- --passWithNoTests)
+
+      - name: Build all apps
+        run: |
+          npm --workspace apps/auth-service run build
+          npm --workspace apps/gateway run build
+          npm --workspace apps/notification-service run build
+
+      - name: Stop NATS
+        if: always()
+        run: docker stop nats && docker rm nats || true
