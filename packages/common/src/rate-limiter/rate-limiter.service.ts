@@ -16,9 +16,7 @@ export class RateLimiterService implements OnModuleDestroy {
     @Optional() @Inject(RATE_LIMITER_OPTIONS) options?: RateLimiterModuleOptions,
   ) {
     const redisUrl =
-      options?.redisUrl ||
-      this.configService.get<string>('REDIS_URL') ||
-      'redis://localhost:6379';
+      options?.redisUrl || this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
 
     this.keyPrefix = options?.keyPrefix ?? 'rl';
     this.disabled = options?.disabled ?? false;

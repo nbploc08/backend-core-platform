@@ -14,7 +14,11 @@ import {
   NotificationReadRequestSchema,
   NotificationUpdatedPayload,
 } from '@contracts/core';
-import { CoreWebsocketGateway, SocketData, WS_GATEWAY_OPTIONS } from 'src/modules/websocket/websocket.gateway';
+import {
+  CoreWebsocketGateway,
+  SocketData,
+  WS_GATEWAY_OPTIONS,
+} from 'src/modules/websocket/websocket.gateway';
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { NotificationService } from 'src/modules/client/notification-service/notification/notification.service';
 
@@ -68,7 +72,10 @@ export class NotificationWsGateway {
         'Notification marked as read via WS',
       );
     } catch (error) {
-      logger.error({ userId: socketData.userId, notificationId, error }, 'Failed to mark notification as read');
+      logger.error(
+        { userId: socketData.userId, notificationId, error },
+        'Failed to mark notification as read',
+      );
       client.emit('error', { message: 'Failed to mark notification as read' });
     }
   }
@@ -103,7 +110,10 @@ export class NotificationWsGateway {
         'All notifications marked as read via WS',
       );
     } catch (error) {
-      logger.error({ userId: socketData.userId, error }, 'Failed to mark all notifications as read');
+      logger.error(
+        { userId: socketData.userId, error },
+        'Failed to mark all notifications as read',
+      );
       client.emit('error', { message: 'Failed to mark all notifications as read' });
     }
   }

@@ -8,15 +8,7 @@
 export { InternalJwtStrategy, CombinedJwtStrategy } from './jwt.strategy';
 
 // Guards
-export {
-  InternalJwtAuthGuard,
-  CombinedJwtAuthGuard,
-  UserJwtAuthGuard,
-} from './jwt-auth.guard';
+export { InternalJwtAuthGuard, CombinedJwtAuthGuard, UserJwtAuthGuard } from './jwt-auth.guard';
 
 // Types
-export type {
-  InternalJwtPayload,
-  UserJwtPayload,
-  JwtValidationResult,
-} from './jwt.strategy';
+export type { InternalJwtPayload, UserJwtPayload, JwtValidationResult } from './jwt.strategy';
