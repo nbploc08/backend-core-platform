@@ -165,5 +165,4 @@ export class NotificationService {
 
     return { updated: result.count };
   }
-
 }

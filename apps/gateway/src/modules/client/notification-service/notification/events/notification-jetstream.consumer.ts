@@ -39,7 +39,11 @@ export class NotificationJetstreamConsumer extends BaseJetstreamConsumer {
           this.wsGateway.emitToUser(payload.userId, WS_NOTIFICATION_NEW, wsPayload);
 
           logger.info(
-            { userId: payload.userId, notificationId: payload.notificationId, unreadCount: payload.unreadCount },
+            {
+              userId: payload.userId,
+              notificationId: payload.notificationId,
+              unreadCount: payload.unreadCount,
+            },
             'Pushed notification to WebSocket',
           );
         },

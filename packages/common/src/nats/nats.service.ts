@@ -20,9 +20,7 @@ export class NatsService implements OnModuleInit, OnModuleDestroy {
   private sc = StringCodec();
   private subscriptions: Subscription[] = [];
 
-  constructor(
-    @Inject(NATS_MODULE_OPTIONS) private readonly options: NatsModuleOptions,
-  ) {}
+  constructor(@Inject(NATS_MODULE_OPTIONS) private readonly options: NatsModuleOptions) {}
 
   async onModuleInit() {
     const natsUrl = this.options.url || process.env.NATS_URL || 'nats://localhost:4222';

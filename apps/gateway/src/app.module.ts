@@ -8,7 +8,13 @@ import { JwtAuthGuard } from './modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientModule } from './modules/client/auth-service/auth/auth-client.module';
 import { RoleClientModule } from './modules/client/auth-service/role/role-client.module';
 import { NotificationModule } from './modules/client/notification-service/notification/notification.module';
-import { NatsModule, PermissionGuard, PermissionModule, RateLimiterGuard, RateLimiterModule } from '@common/core';
+import {
+  NatsModule,
+  PermissionGuard,
+  PermissionModule,
+  RateLimiterGuard,
+  RateLimiterModule,
+} from '@common/core';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { WebsocketModule } from './modules/websocket';
 
@@ -28,9 +34,7 @@ import { WebsocketModule } from './modules/websocket';
     WebsocketModule,
     NatsModule.forRoot({
       serviceName: 'gateway-service',
-      streams: [
-        { name: 'NOTIFICATION_EVENT', subjects: ['notification.*'] },
-      ],
+      streams: [{ name: 'NOTIFICATION_EVENT', subjects: ['notification.*'] }],
     }),
   ],
   controllers: [AppController],

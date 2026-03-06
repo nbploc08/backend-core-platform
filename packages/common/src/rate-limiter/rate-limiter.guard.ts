@@ -32,17 +32,14 @@ export class RateLimiterGuard implements CanActivate {
       const key = this.buildKey(req, rule);
       const result = await this.rateLimiterService.check(key, rule.limit, rule.window);
 
-      if (
-        !mostRestrictive ||
-        result.remaining < mostRestrictive.result.remaining
-      ) {
+      if (!mostRestrictive || result.remaining < mostRestrictive.result.remaining) {
         mostRestrictive = { rule, result };
       }
 
       if (!result.allowed) {
-        const traceId = req.requestId ?? req.headers?.['x-request-id'];
+        const requestId = req.requestId ?? req.headers?.['x-request-id'];
         logger.warn(
-          { traceId, key, limit: rule.limit, window: rule.window },
+          { requestId, key, limit: rule.limit, window: rule.window },
           'Rate limit exceeded',
         );
 
@@ -84,7 +81,10 @@ export class RateLimiterGuard implements CanActivate {
           const field = keySource.slice(5);
           const value = req.body?.[field];
           identifier = value
-            ? createHash('sha256').update(String(value).toLowerCase().trim()).digest('hex').slice(0, 16)
+            ? createHash('sha256')
+                .update(String(value).toLowerCase().trim())
+                .digest('hex')
+                .slice(0, 16)
             : 'empty';
         } else {
           identifier = 'unknown';
