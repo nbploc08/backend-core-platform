@@ -59,7 +59,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
         return;
       }
 
-      const traceId = job?.id ?? 'unknown';
+      const requestId = job?.id ?? 'unknown';
       const jobName = job?.name ?? 'unknown';
       const attemptsMade = job?.attemptsMade ?? 0;
       const failedReason = error?.message ?? 'Unknown error';
@@ -67,7 +67,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
       logger.error(
         {
           event: 'email.failed',
-          traceId,
+          requestId,
           jobName,
           attemptsMade,
           failedReason,
@@ -80,7 +80,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
         await this.dlqQueue.add(
           'failed-mail-job',
           {
-            originalJobId: traceId,
+            originalJobId: requestId,
             jobName,
             failedReason,
             attemptedAt: new Date().toISOString(),
@@ -89,7 +89,7 @@ export class JobsService extends WorkerHost implements OnModuleInit {
           { removeOnComplete: { count: 1000 } },
         );
       } catch (dlqErr) {
-        logger.error({ traceId, error: (dlqErr as Error).message }, 'Failed to add job to DLQ');
+        logger.error({ requestId, error: (dlqErr as Error).message }, 'Failed to add job to DLQ');
       }
     });
 

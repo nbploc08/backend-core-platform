@@ -30,3 +30,5 @@ export * from './nats/nats.constants';
 export * from './nats/base-jetstream-consumer';
 
 export * from './rate-limiter';
+
+export * from './middlewares/request-id.middleware';

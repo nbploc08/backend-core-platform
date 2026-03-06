@@ -16,7 +16,7 @@ type ApiErrorBody = {
     message: string;
     details?: unknown;
   };
-  traceId?: string;
+  requestId?: string;
 };
 
 type LogEntry = {
@@ -79,15 +79,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }>();
     const res = ctx.getResponse();
 
-    const traceId = req?.requestId;
+    const requestId = req?.requestId;
     const method = req?.method;
     const path = req?.originalUrl ?? req?.url;
-    const baseBindings = { traceId, method, path };
+    const baseBindings = { requestId, method, path };
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let body: ApiErrorBody = {
       error: { code: ErrorCodes.INTERNAL, message: 'Internal server error' },
-      traceId,
+      requestId,
     };
     let logEntry: LogEntry | null = null;
 
@@ -100,7 +100,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message: exception.exposeMessage ? exception.message : 'Request failed',
           details: exception.details,
         },
-        traceId,
+        requestId,
       };
       logEntry = {
         level: statusCode >= 500 ? 'error' : 'warn',
@@ -119,7 +119,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message: 'Validation failed',
           details,
         },
-        traceId,
+        requestId,
       };
       logEntry = {
         level: 'warn',
@@ -155,7 +155,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message: statusCode >= 500 ? 'Internal server error' : message,
           details: resp?.details,
         },
-        traceId,
+        requestId,
       };
       if (!(statusCode === 404 && shouldSkipLog404(path))) {
         logEntry = {

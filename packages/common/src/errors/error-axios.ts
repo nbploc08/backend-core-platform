@@ -10,7 +10,10 @@ function isAxiosLike(err: unknown): err is AxiosLikeError {
   return !!err && typeof err === 'object' && 'response' in err;
 }
 
-type ErrorBody = { error?: { code?: string; message?: string }; [k: string]: unknown };
+type ErrorBody = {
+  error?: { code?: string; message?: string; details?: unknown };
+  [k: string]: unknown;
+};
 
 /**
  * Chuyển lỗi từ axios (hoặc lỗi có dạng { response: { status, data } }) thành ServiceError chuẩn.
@@ -39,7 +42,7 @@ export function handleAxiosError(err: unknown, defaultMessage = 'Request failed'
       code,
       statusCode: status,
       message,
-      details: status >= 500 ? undefined : body,
+      details: status >= 500 ? undefined : body?.error?.details,
     });
   }
   throw new ServiceError({

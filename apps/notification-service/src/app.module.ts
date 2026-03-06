@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { NatsModule } from '@common/core';
+import { NatsModule, RequestIdMiddleware } from '@common/core';
 import { NotificationModule } from './modules/notification/notification.module';
 import { MailsModule } from './modules/mails/mails.module';
 import { JetstreamModule } from './modules/jetstream/jetstream.module';
@@ -47,4 +47,8 @@ import { PrismaModule } from './modules/prisma/prisma.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}
