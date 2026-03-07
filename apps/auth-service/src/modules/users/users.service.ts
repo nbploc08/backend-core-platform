@@ -5,6 +5,8 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
+import { session } from 'passport';
+import { async } from 'rxjs';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
@@ -94,7 +96,9 @@ export class UsersService {
     });
 
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ServiceError({
+        code: ErrorCodes.CONFLICT, statusCode: HttpStatus.CONFLICT, message: "Email already exists"
+      });
     }
 
     // Hash password

@@ -94,7 +94,7 @@ export class AuthService {
     } as loginResponseDto;
   }
 
-  async register(dto: RegisterDto): Promise<RegisterResponseDto> {
+  async register(dto: RegisterDto, requestId: string): Promise<RegisterResponseDto> {
     const user = await this.usersService.create(dto);
 
     const eventPayload = {
@@ -102,6 +102,7 @@ export class AuthService {
       email: user.email,
       code: user.code,
       createdAt: user.createdAt.toISOString(),
+      requestId: requestId, // You can set this to a unique request ID if you have one in your context
     };
 
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);

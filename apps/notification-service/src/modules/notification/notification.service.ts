@@ -2,7 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from 'src/modules/notification/dto/create-notification.dto';
 import { UserRegisteredEventDto } from './dto/userRegisteredEvent.dto';
 import { MailsService } from 'src/modules/mails/mails.service';
-import { decrypt, getEncryptKey, logger, ServiceError, ErrorCodes } from '@common/core';
+import {
+  decrypt,
+  getEncryptKey,
+  logger,
+  ServiceError,
+  ErrorCodes,
+  getReqLogger,
+} from '@common/core';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { NOTIFICATION_CREATED, NotificationCreatedSchema, USER_REGISTERED } from '@contracts/core';
 import { NatsService } from '@common/core';
@@ -14,11 +21,21 @@ export class NotificationService {
     private readonly natsService: NatsService,
   ) {}
 
-  async sendMailRegis(userRegisteredEvent: UserRegisteredEventDto): Promise<boolean> {
-    const code = decrypt(userRegisteredEvent.code, getEncryptKey());
-    await this.mailsService.sendVerifyCode(userRegisteredEvent.email, code);
-    logger.info(`Send verify code to ${userRegisteredEvent.email}`);
-    return true;
+  async sendMailRegis(
+    userRegisteredEvent: UserRegisteredEventDto & { requestId?: string | undefined },
+  ): Promise<any> {
+    const log = getReqLogger(userRegisteredEvent.requestId || '');
+    try {
+      const code = decrypt(userRegisteredEvent.code, getEncryptKey());
+      await this.mailsService.sendVerifyCode(userRegisteredEvent.email, code);
+      log.info(
+        { email: userRegisteredEvent.email, userId: userRegisteredEvent.userId },
+        'Send welcome notification for new registered user',
+      );
+      return true;
+    } catch (error) {
+      log.error('Send Email failed');
+    }
   }
   async createNoti(payLoad: CreateNotificationDto): Promise<any> {
     const noti = await this.prisma.notification.create({
