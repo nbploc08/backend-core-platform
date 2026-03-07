@@ -11,7 +11,12 @@ function isAxiosLike(err: unknown): err is AxiosLikeError {
 }
 
 type ErrorBody = {
+  // Legacy shape: { error: { code, message, details } }
   error?: { code?: string; message?: string; details?: unknown };
+  // ApiResponse shape: { messageKey, message, errors }
+  messageKey?: string;
+  message?: string;
+  errors?: unknown;
   [k: string]: unknown;
 };
 
@@ -29,7 +34,10 @@ export function handleAxiosError(err: unknown, defaultMessage = 'Request failed'
   if (isAxiosLike(err)) {
     const status = err.response?.status ?? 500;
     const body = err.response?.data as ErrorBody | undefined;
-    const codeFromBody = body?.error?.code;
+
+    // Support both ApiResponse shape ({ messageKey, message, errors })
+    // and legacy shape ({ error: { code, message, details } })
+    const codeFromBody = body?.messageKey ?? body?.error?.code;
     const code: ErrorCode =
       (codeFromBody as ErrorCode) ??
       (status === 401
@@ -37,12 +45,17 @@ export function handleAxiosError(err: unknown, defaultMessage = 'Request failed'
         : status === 404
           ? ErrorCodes.NOT_FOUND
           : ErrorCodes.INTERNAL);
-    const message = body?.error?.message ?? (err.message && String(err.message)) ?? defaultMessage;
+    const message =
+      body?.message ??
+      body?.error?.message ??
+      (err.message && String(err.message)) ??
+      defaultMessage;
+    const details = body?.errors ?? body?.error?.details;
     throw new ServiceError({
       code,
       statusCode: status,
       message,
-      details: status >= 500 ? undefined : body?.error?.details,
+      details: status >= 500 ? undefined : details,
     });
   }
   throw new ServiceError({

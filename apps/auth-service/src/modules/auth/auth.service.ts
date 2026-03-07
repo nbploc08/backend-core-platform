@@ -94,7 +94,7 @@ export class AuthService {
     } as loginResponseDto;
   }
 
-  async register(dto: RegisterDto): Promise<RegisterResponseDto> {
+  async register(dto: RegisterDto, requestId: string): Promise<RegisterResponseDto> {
     const user = await this.usersService.create(dto);
 
     const eventPayload = {
@@ -102,6 +102,7 @@ export class AuthService {
       email: user.email,
       code: user.code,
       createdAt: user.createdAt.toISOString(),
+      requestId: requestId, // You can set this to a unique request ID if you have one in your context
     };
 
     const validatedPayload = UserRegisteredSchema.parse(eventPayload);
@@ -195,8 +196,8 @@ export class AuthService {
       });
     }
   }
-  async info(user: UserInterface): Promise<InfoUserDto> {
-    return (await this.usersService.info(user)) as InfoUserDto;
+  async info(userId: string): Promise<InfoUserDto> {
+    return (await this.usersService.info(userId)) as InfoUserDto;
   }
   async resendCode(email: string): Promise<{ message: string }> {
     try {

@@ -32,14 +32,10 @@ export type UserJwtPayload = {
  * Kết quả trả về từ validate()
  */
 export type JwtValidationResult = {
-  type: 'internal' | 'user';
+  type: 'internal' | 'api';
   // Internal JWT fields
   caller?: string;
   data?: Record<string, unknown>;
-  // User JWT fields
-  userId?: string;
-  email?: string;
-  permVersion?: number;
 };
 
 /**
@@ -141,10 +137,13 @@ export class CombinedJwtStrategy extends PassportStrategy(Strategy, 'combined-jw
       // User JWT
       const userPayload = payload as UserJwtPayload;
       return {
-        type: 'user',
-        userId: userPayload.sub,
-        email: userPayload.email,
-        permVersion: userPayload.permVersion,
+        type: 'api',
+        caller: 'User',
+        data: {
+          userId: userPayload.sub,
+          email: userPayload.email,
+          permVersion: userPayload.permVersion,
+        },
       };
     }
 

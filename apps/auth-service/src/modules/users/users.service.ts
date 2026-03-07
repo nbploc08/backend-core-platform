@@ -5,6 +5,8 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
+import { session } from 'passport';
+import { async } from 'rxjs';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
@@ -14,6 +16,7 @@ import {
   hashPassword,
   logger,
   ServiceError,
+  User,
   verifyPassword,
 } from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
@@ -93,7 +96,11 @@ export class UsersService {
     });
 
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ServiceError({
+        code: ErrorCodes.CONFLICT,
+        statusCode: HttpStatus.CONFLICT,
+        message: 'Email already exists',
+      });
     }
 
     // Hash password
@@ -237,9 +244,9 @@ export class UsersService {
       updatedAt: u.updatedAt,
     } as UserAuthResponseDto;
   }
-  async info(user: UserInterface): Promise<InfoUserDto> {
+  async info(userId: string): Promise<InfoUserDto> {
     return (await this.prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,

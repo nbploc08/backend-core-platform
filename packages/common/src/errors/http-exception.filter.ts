@@ -9,15 +9,7 @@ import {
 import { logger } from '../logging/logger';
 import { ErrorCode, ErrorCodes } from './error-codes';
 import { ServiceError } from './service-error';
-
-type ApiErrorBody = {
-  error: {
-    code: ErrorCode;
-    message: string;
-    details?: unknown;
-  };
-  requestId?: string;
-};
+import { ApiResponse } from '../response/response';
 
 type LogEntry = {
   level: 'warn' | 'error';
@@ -85,23 +77,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const baseBindings = { requestId, method, path };
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let body: ApiErrorBody = {
-      error: { code: ErrorCodes.INTERNAL, message: 'Internal server error' },
-      requestId,
-    };
+    let messageKey: string = ErrorCodes.INTERNAL;
+    let message = 'Internal server error';
+    let errors: string[] | undefined;
     let logEntry: LogEntry | null = null;
 
     // 1) Business error (ServiceError)
     if (exception instanceof ServiceError) {
       statusCode = exception.statusCode;
-      body = {
-        error: {
-          code: exception.code,
-          message: exception.exposeMessage ? exception.message : 'Request failed',
-          details: exception.details,
-        },
-        requestId,
-      };
+      messageKey = exception.code;
+      message = exception.exposeMessage ? exception.message : 'Request failed';
+      if (exception.details) {
+        errors = Array.isArray(exception.details)
+          ? exception.details.map(String)
+          : [String(exception.details)];
+      }
       logEntry = {
         level: statusCode >= 500 ? 'error' : 'warn',
         bindings: { ...baseBindings, statusCode, code: exception.code, details: exception.details },
@@ -113,21 +103,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode = exception.getStatus();
       const resp = exception.getResponse() as { message?: unknown };
       const details = resp?.message;
-      body = {
-        error: {
-          code: ErrorCodes.VALIDATION_ERROR,
-          message: 'Validation failed',
-          details,
-        },
-        requestId,
-      };
+      messageKey = ErrorCodes.VALIDATION_ERROR;
+      message = 'Validation failed';
+      if (details) {
+        errors = Array.isArray(details) ? details.map(String) : [String(details)];
+      }
       logEntry = {
         level: 'warn',
         bindings: { ...baseBindings, statusCode, details },
         msg: 'validation_failed',
       };
     }
-    // 3) Nest HttpException (401/403/404/409/...) - use duck typing to handle multiple @nestjs/common versions
+    // 3) Nest HttpException (401/403/404/409/...)
     else if (
       exception != null &&
       typeof exception === 'object' &&
@@ -141,31 +128,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message?: string | string[];
         details?: unknown;
       };
-      const code = resp?.code ?? defaultCodeForStatus(statusCode);
-      const message =
+      messageKey = resp?.code ?? defaultCodeForStatus(statusCode);
+      const rawMessage =
         resp?.message != null
           ? Array.isArray(resp.message)
             ? resp.message.join(', ')
             : String(resp.message)
           : (httpEx.message ?? 'Request failed');
-
-      body = {
-        error: {
-          code,
-          message: statusCode >= 500 ? 'Internal server error' : message,
-          details: resp?.details,
-        },
-        requestId,
-      };
+      message = statusCode >= 500 ? 'Internal server error' : rawMessage;
+      if (resp?.details) {
+        errors = Array.isArray(resp.details) ? resp.details.map(String) : [String(resp.details)];
+      }
       if (!(statusCode === 404 && shouldSkipLog404(path))) {
         logEntry = {
           level: 'warn',
-          bindings: { ...baseBindings, statusCode, code, details: resp?.details },
-          msg: message,
+          bindings: { ...baseBindings, statusCode, code: messageKey, details: resp?.details },
+          msg: rawMessage,
         };
       }
     }
-    // 4) Unknown error — log message để debug (config/env, v.v.), response vẫn "Internal server error"
+    // 4) Unknown error
     else {
       const errMsg = exception instanceof Error ? exception.message : 'unhandled_exception';
       logEntry = {
@@ -184,6 +166,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (!res.headersSent) {
+      const body: ApiResponse = {
+        success: false,
+        messageKey,
+        message,
+        errors,
+        timestamp: new Date().toISOString(),
+      };
       res.status(statusCode).json(body);
     }
   }

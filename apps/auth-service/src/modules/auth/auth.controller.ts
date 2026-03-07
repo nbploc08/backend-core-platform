@@ -41,8 +41,8 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @RateLimit({ prefix: 'auth:register:ip', limit: 5, window: 60, keySource: 'ip' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto, @Req() req: Request & { requestId: string }) {
+    return this.authService.register(registerDto, req.requestId);
   }
 
   @Post('register/verify')
@@ -95,7 +95,7 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   me(@Info('data') info: any) {
-    return this.authService.info(info.id);
+    return this.authService.info(info.userId);
   }
 
   @Post('logout-device')
