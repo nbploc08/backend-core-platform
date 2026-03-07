@@ -7,6 +7,7 @@ import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.servic
 import { handleAxiosError, ServiceError } from '@common/core';
 import { IdempotencyService } from 'src/modules/share/idempotency.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 export type ProfileResponse = {
   id: string;
@@ -99,7 +100,7 @@ export class AuthClientService {
   }
 
   async register(
-    registerDto: Record<string, unknown>,
+    registerDto: RegisterDto,
     requestId: string,
     requestPath: string,
     idempotencyKey?: string,
@@ -114,7 +115,7 @@ export class AuthClientService {
       } = await this.idempotency.checkIdempotency({
         method: 'POST',
         path: requestPath || '/client/auth/register',
-        body: registerDto,
+        body: { ...registerDto },
         key: idempotencyKey || '',
       });
       recordId = rId;

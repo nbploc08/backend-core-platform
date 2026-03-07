@@ -15,6 +15,7 @@ import { Cookies, Public, RateLimit, User } from '@common/core';
 import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('client/auth')
 @UseGuards(JwtAuthGuard)
@@ -46,7 +47,7 @@ export class AuthClientController {
   @HttpCode(HttpStatus.CREATED)
   @RateLimit({ prefix: 'register:ip', limit: 5, window: 60, keySource: 'ip' })
   async register(
-    @Body() registerDto: Record<string, unknown>,
+    @Body() registerDto: RegisterDto,
     @Req() req: Request & { requestId?: string },
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
