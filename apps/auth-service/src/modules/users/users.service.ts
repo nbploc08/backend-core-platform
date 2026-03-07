@@ -14,6 +14,7 @@ import {
   hashPassword,
   logger,
   ServiceError,
+  User,
   verifyPassword,
 } from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
@@ -237,9 +238,9 @@ export class UsersService {
       updatedAt: u.updatedAt,
     } as UserAuthResponseDto;
   }
-  async info(user: UserInterface): Promise<InfoUserDto> {
+  async info(userId: string): Promise<InfoUserDto> {
     return (await this.prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,

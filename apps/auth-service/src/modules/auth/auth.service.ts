@@ -195,8 +195,8 @@ export class AuthService {
       });
     }
   }
-  async info(user: UserInterface): Promise<InfoUserDto> {
-    return (await this.usersService.info(user)) as InfoUserDto;
+  async info(userId: string): Promise<InfoUserDto> {
+    return (await this.usersService.info(userId)) as InfoUserDto;
   }
   async resendCode(email: string): Promise<{ message: string }> {
     try {

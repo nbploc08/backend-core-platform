@@ -14,25 +14,16 @@ import type { Request, Response } from 'express';
 import { Cookies, Public, RateLimit, User } from '@common/core';
 import { JwtAuthGuard } from 'src/modules/internal-jwt/strategy/jwt-auth.guard';
 import { AuthClientService } from './auth-client.service';
-
-function getRequestId(req: Request & { requestId?: string }): string {
-  const rid = req.requestId ?? req.headers['x-request-id'];
-  return Array.isArray(rid) ? (rid[0] ?? '') : (rid ?? '');
-}
+import { LoginDto } from './dto/login.dto';
 
 @Controller('client/auth')
 @UseGuards(JwtAuthGuard)
 export class AuthClientController {
   constructor(private readonly authClient: AuthClientService) {}
-
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async me(@User() user: { userId: string }, @Req() req: Request & { requestId?: string }) {
-    return this.authClient.getProfileByUserId(
-      user.userId,
-      getRequestId(req),
-      req.headers.authorization,
-    );
+  async me(@Req() req: Request & { requestId?: string }) {
+    return this.authClient.getProfileByUserId(req.requestId || '', req.headers.authorization);
   }
 
   @Public()
@@ -43,11 +34,11 @@ export class AuthClientController {
     { prefix: 'login:email', limit: 5, window: 60, keySource: 'body.email' },
   ])
   async login(
-    @Body() loginDto: { email?: string; password?: string; username?: string },
+    @Body() loginDto: LoginDto,
     @Req() req: Request & { requestId?: string },
     @Res({ passthrough: true }) res?: Response,
   ) {
-    return this.authClient.login(loginDto, getRequestId(req), res);
+    return this.authClient.login(loginDto, req.requestId || '', res);
   }
 
   @Public()
@@ -59,7 +50,7 @@ export class AuthClientController {
     @Req() req: Request & { requestId?: string },
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.authClient.register(registerDto, getRequestId(req), req.path, idempotencyKey);
+    return this.authClient.register(registerDto, req.requestId || '', req.path, idempotencyKey);
   }
 
   @Public()
@@ -69,7 +60,7 @@ export class AuthClientController {
     @Body() verifyDto: { email: string; code: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.authClient.verify(verifyDto, getRequestId(req));
+    return this.authClient.verify(verifyDto, req.requestId || '');
   }
 
   @Public()
@@ -79,7 +70,7 @@ export class AuthClientController {
     @Body() confirmDto: { email: string; code: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.authClient.confirm(confirmDto, getRequestId(req));
+    return this.authClient.confirm(confirmDto, req.requestId || '');
   }
 
   @Public()
@@ -90,7 +81,7 @@ export class AuthClientController {
     { prefix: 'resend:email', limit: 2, window: 60, keySource: 'body.email' },
   ])
   async resendCode(@Body('email') email: string, @Req() req: Request & { requestId?: string }) {
-    return this.authClient.resendCode(email, getRequestId(req));
+    return this.authClient.resendCode(email, req.requestId || '');
   }
 
   @Public()
@@ -103,7 +94,7 @@ export class AuthClientController {
     @Req() req: Request & { requestId?: string },
     @Res({ passthrough: true }) res?: Response,
   ) {
-    return this.authClient.refresh(refreshToken ?? '', deviceId ?? '', getRequestId(req), res);
+    return this.authClient.refresh(refreshToken ?? '', deviceId ?? '', req.requestId || '', res);
   }
 
   @Post('logout-device')
@@ -119,7 +110,7 @@ export class AuthClientController {
       deviceId ?? '',
       refreshToken ?? '',
       user.userId,
-      getRequestId(req),
+      req.requestId || '',
       res,
       req.headers.authorization,
     );
@@ -134,7 +125,7 @@ export class AuthClientController {
   ) {
     return this.authClient.logoutAll(
       user.userId,
-      getRequestId(req),
+      req.requestId || '',
       res,
       req.headers.authorization,
     );
@@ -151,7 +142,7 @@ export class AuthClientController {
     @Body() forgotPasswordDto: { email: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.authClient.forgotPassword(forgotPasswordDto, getRequestId(req));
+    return this.authClient.forgotPassword(forgotPasswordDto, req.requestId || '');
   }
 
   @Public()
@@ -162,7 +153,7 @@ export class AuthClientController {
     @Body() forgotPasswordVerifyDto: { email: string; code: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.authClient.forgotPasswordVerify(forgotPasswordVerifyDto, getRequestId(req));
+    return this.authClient.forgotPasswordVerify(forgotPasswordVerifyDto, req.requestId || '');
   }
   @Public()
   @Post('forgot/password/reset')
@@ -172,6 +163,6 @@ export class AuthClientController {
     @Body() forgotPasswordResetDto: { email: string; code: string; password: string },
     @Req() req: Request & { requestId?: string },
   ) {
-    return this.authClient.forgotPasswordReset(forgotPasswordResetDto, getRequestId(req));
+    return this.authClient.forgotPasswordReset(forgotPasswordResetDto, req.requestId || '');
   }
 }

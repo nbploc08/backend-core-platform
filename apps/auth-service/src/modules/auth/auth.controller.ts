@@ -95,7 +95,7 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   me(@Info('data') info: any) {
-    return this.authService.info(info.id);
+    return this.authService.info(info.userId);
   }
 
   @Post('logout-device')

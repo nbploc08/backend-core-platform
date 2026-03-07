@@ -6,6 +6,7 @@ import type { Response } from 'express';
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
 import { handleAxiosError, ServiceError } from '@common/core';
 import { IdempotencyService } from 'src/modules/share/idempotency.service';
+import { LoginDto } from './dto/login.dto';
 
 export type ProfileResponse = {
   id: string;
@@ -61,11 +62,7 @@ export class AuthClientService {
     return headers;
   }
 
-  async getProfileByUserId(
-    userId: string,
-    requestId: string,
-    token?: string,
-  ): Promise<ProfileResponse> {
+  async getProfileByUserId(requestId: string, token?: string): Promise<ProfileResponse> {
     try {
       const response = await this.client.get<ProfileResponse>('auth/internal/me', {
         headers: this.getHeaders(requestId, token),
@@ -82,11 +79,7 @@ export class AuthClientService {
     }
   }
 
-  async login(
-    loginDto: { email?: string; password?: string; username?: string; [k: string]: unknown },
-    requestId: string,
-    clientRes?: Response,
-  ): Promise<LoginResponse> {
+  async login(loginDto: LoginDto, requestId: string, clientRes?: Response): Promise<LoginResponse> {
     try {
       const response = await this.client.post<LoginResponse>('auth/internal/login', loginDto, {
         headers: this.getHeaders(requestId),

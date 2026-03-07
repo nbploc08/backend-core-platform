@@ -41,21 +41,7 @@ export class CombinedJwtAuthGuard extends AuthGuard('combined-jwt') {
 
     if (ok) {
       const req = context.switchToHttp().getRequest();
-      const user = req.user as JwtValidationResult;
-
-      // req.user đã có type: 'internal' | 'user' từ CombinedJwtStrategy.validate()
-      // PermissionGuard sẽ đọc req.user.type để quyết định skip hay check permission
-
-      if (user.type === 'internal') {
-        // Set req.info for backward compatibility with internal calls
-        req.info = {
-          caller: user.caller,
-          data: user.data,
-        };
-      }
-
-      // For user JWT, req.user already contains: { type: 'user', userId, email, permVersion }
-      // No additional processing needed
+      req.info = req.user;
     }
 
     return ok;
@@ -93,6 +79,7 @@ export class InternalJwtAuthGuard extends AuthGuard('internal-jwt') {
     if (ok) {
       const req = context.switchToHttp().getRequest();
       req.info = req.user;
+      delete req.user;
     }
 
     return ok;
