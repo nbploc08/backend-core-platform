@@ -305,6 +305,12 @@ export class AuthClientService {
           headers: this.getHeaders(requestId),
         },
       );
+      if (response.status >= 400) {
+        handleAxiosError(
+          { response: { status: response.status, data: response.data } },
+          'Auth service request failed',
+        );
+      }
       return response.data;
     } catch (err: unknown) {
       handleAxiosError(err, 'Auth service request failed');
@@ -322,6 +328,12 @@ export class AuthClientService {
           headers: this.getHeaders(requestId),
         },
       );
+      if (response.status >= 400) {
+        handleAxiosError(
+          { response: { status: response.status, data: response.data } },
+          'Auth service request failed',
+        );
+      }
       return response.data;
     } catch (err: unknown) {
       handleAxiosError(err, 'Auth service request failed');
@@ -339,6 +351,12 @@ export class AuthClientService {
           headers: this.getHeaders(requestId),
         },
       );
+      if (response.status >= 400) {
+        handleAxiosError(
+          { response: { status: response.status, data: response.data } },
+          'Auth service request failed',
+        );
+      }
       return response.data;
     } catch (err: unknown) {
       handleAxiosError(err, 'Auth service request failed');
