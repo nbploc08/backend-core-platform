@@ -4,7 +4,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
 import { lastValueFrom } from 'rxjs';
 import { IS_PUBLIC_KEY } from '@common/core';
-import { JwtValidationResult } from './jwt.strategy';
 
 /**
  * Combined JWT Auth Guard

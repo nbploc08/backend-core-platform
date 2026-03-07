@@ -97,7 +97,9 @@ export class UsersService {
 
     if (existing) {
       throw new ServiceError({
-        code: ErrorCodes.CONFLICT, statusCode: HttpStatus.CONFLICT, message: "Email already exists"
+        code: ErrorCodes.CONFLICT,
+        statusCode: HttpStatus.CONFLICT,
+        message: 'Email already exists',
       });
     }
 

@@ -28,18 +28,16 @@ export class JetstreamConsumerService extends BaseJetstreamConsumer {
         durableName: 'notification-user-registered',
         filterSubject: 'user.registered',
         handle: async (msg) => {
-
-            const data = JSON.parse(msg.string());
-            const payload = UserRegisteredSchema.parse(data);
-            await this.notificationService.sendMailRegis(payload);
-            // await this.notificationService.createNoti({
-            //   userId: payload.userId,
-            //   type: 'notification-user-registered',
-            //   title: 'Chào mừng bạn đến với hệ thống',
-            //   body: `Tài khoản ${payload.email} đã được tạo thành công.`,
-            //   data: { email: payload.email, actionCreatedAt: payload.createdAt },
-            // });
-
+          const data = JSON.parse(msg.string());
+          const payload = UserRegisteredSchema.parse(data);
+          await this.notificationService.sendMailRegis(payload);
+          // await this.notificationService.createNoti({
+          //   userId: payload.userId,
+          //   type: 'notification-user-registered',
+          //   title: 'Chào mừng bạn đến với hệ thống',
+          //   body: `Tài khoản ${payload.email} đã được tạo thành công.`,
+          //   data: { email: payload.email, actionCreatedAt: payload.createdAt },
+          // });
         },
       },
     ];
