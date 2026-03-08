@@ -40,7 +40,7 @@ export class PermissionCache {
     try {
       const data = JSON.parse(cached.permissions);
       return data;
-    } catch (e) {
+    } catch {
       return [];
     }
   }

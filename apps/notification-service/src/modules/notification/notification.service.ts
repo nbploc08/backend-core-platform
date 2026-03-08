@@ -2,16 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { CreateNotificationDto } from 'src/modules/notification/dto/create-notification.dto';
 import { UserRegisteredEventDto } from './dto/userRegisteredEvent.dto';
 import { MailsService } from 'src/modules/mails/mails.service';
-import {
-  decrypt,
-  getEncryptKey,
-  logger,
-  ServiceError,
-  ErrorCodes,
-  getReqLogger,
-} from '@common/core';
+import { decrypt, getEncryptKey, ServiceError, ErrorCodes, getReqLogger } from '@common/core';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
-import { NOTIFICATION_CREATED, NotificationCreatedSchema, USER_REGISTERED } from '@contracts/core';
+import { NOTIFICATION_CREATED, NotificationCreatedSchema } from '@contracts/core';
 import { NatsService } from '@common/core';
 @Injectable()
 export class NotificationService {
@@ -33,7 +26,7 @@ export class NotificationService {
         'Send welcome notification for new registered user',
       );
       return true;
-    } catch (error) {
+    } catch {
       log.error('Send Email failed');
     }
   }

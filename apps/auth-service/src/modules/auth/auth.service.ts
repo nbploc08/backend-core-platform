@@ -1,5 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
-import { async } from 'rxjs';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/modules/users/users.service';
 import { NatsService } from '@common/core';
 import { RegisterDto } from './dto/register.dto';
@@ -131,14 +130,12 @@ export class AuthService {
   async verify(dto: VerifyRegisterDto): Promise<boolean> {
     try {
       return await this.usersService.veryfiRegister(dto.email, dto.code);
-
     } catch {
-      throw new ServiceError(
-        {code: ErrorCodes.VALIDATION_ERROR,
-          statusCode: HttpStatus.UNAUTHORIZED,
-        message: 'Invalid code'
-        }
-      )
+      throw new ServiceError({
+        code: ErrorCodes.VALIDATION_ERROR,
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid code',
+      });
     }
   }
 

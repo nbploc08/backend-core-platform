@@ -4,7 +4,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { Response } from 'express';
 
 import { InternalJwtService } from 'src/modules/internal-jwt/internal-jwt.service';
-import { handleAxiosError, ServiceError } from '@common/core';
+import { handleAxiosError } from '@common/core';
 import { IdempotencyService } from 'src/modules/share/idempotency.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';

@@ -1,16 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import {
-  NatsService,
-  BaseJetstreamConsumer,
-  ConsumerConfig,
-  logger,
-  ServiceError,
-  getReqLogger,
-  ErrorCodes,
-} from '@common/core';
+import { Injectable } from '@nestjs/common';
+import { NatsService, BaseJetstreamConsumer, ConsumerConfig } from '@common/core';
 import { UserRegisteredSchema } from '@contracts/core';
 import { NotificationService } from 'src/modules/notification/notification.service';
-import { email } from 'zod';
 
 @Injectable()
 export class JetstreamConsumerService extends BaseJetstreamConsumer {
