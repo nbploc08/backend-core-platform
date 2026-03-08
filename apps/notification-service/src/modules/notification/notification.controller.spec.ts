@@ -8,7 +8,7 @@ describe('NotificationController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationController],
-      providers: [NotificationService],
+      providers: [{ provide: NotificationService, useValue: {} }],
     }).compile();
 
     controller = module.get<NotificationController>(NotificationController);

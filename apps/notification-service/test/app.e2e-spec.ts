@@ -3,6 +3,13 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { MailsService } from './../src/modules/mails/mails.service';
+
+const mockMailsService = {
+  sendMail: jest.fn(),
+  sendVerifyCode: jest.fn(),
+  sendResetPassword: jest.fn(),
+};
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -10,10 +17,17 @@ describe('AppController (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(MailsService)
+      .useValue(mockMailsService)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
+  });
+
+  afterEach(async () => {
+    await app?.close();
   });
 
   it('/ (GET)', () => {

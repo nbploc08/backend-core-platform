@@ -103,7 +103,7 @@ export class CombinedJwtStrategy extends PassportStrategy(Strategy, 'combined-jw
           } else {
             return done(new UnauthorizedException(`Unknown token audience: ${audience}`));
           }
-        } catch (error) {
+        } catch {
           return done(new UnauthorizedException('Token decode failed'));
         }
       },

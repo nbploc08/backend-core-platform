@@ -1,12 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  BadRequestException,
-  HttpStatus,
-} from '@nestjs/common';
-import { session } from 'passport';
-import { async } from 'rxjs';
+import { Injectable, NotFoundException, BadRequestException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
@@ -16,12 +8,10 @@ import {
   hashPassword,
   logger,
   ServiceError,
-  User,
   verifyPassword,
 } from '@common/core';
 import { CreateUserResponseDto } from './dto/resCreateUser.dto';
 import { UserAuthResponseDto } from './dto/userAuth.dto';
-import { UserInterface } from 'src/entities/user.entities';
 import { InfoUserDto } from './dto/infoUser.dto';
 
 @Injectable()
