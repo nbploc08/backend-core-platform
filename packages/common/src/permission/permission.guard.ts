@@ -41,8 +41,12 @@ export class PermissionGuard implements CanActivate {
     }
 
     // 5. For User JWT, check permissions
-    const userId = request.user?.userId || request.user?.data?.id;
-    const permVersion = request.user?.permVersion || request.user?.data?.permVersion;
+    const userId = (request.user?.userId ?? 0) !== 0 ? request.user?.userId : request.user?.data?.userId;
+    // const userId = request.user?.userId || request.user?.data?.id;
+    const permVersion = (request.user?.permVersion ?? 0) !== 0
+      ? request.user?.permVersion
+      : request.user?.data?.permVersion;
+    // const permVersion = request.user?.permVersion || request.user?.data?.permVersion;
     const requestId = request.headers['x-request-id'];
 
     if (!userId || permVersion === undefined) {
