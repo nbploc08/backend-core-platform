@@ -12,6 +12,11 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 8000);
+  await app.listen(process.env.PORT ?? 8000);
+
+  console.log(
+    ` =======================-****** Gateway listening on port =======================-****** ${process.env.PORT ?? 8000}`,
+  );
 }
 bootstrap();

@@ -11,7 +11,11 @@ async function bootstrap() {
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
   // NATS: NatsModule (connect + stream EVENTS) + JetstreamModule (consumer user.registered)
-  await app.listen(process.env.PORT ?? 3002);
+  await app.listen(process.env.PORT ?? 8002);
+
+  console.log(
+    ` =======================-****** Notification service listening on port =======================-****** ${process.env.PORT ?? 8002}`,
+  );
 }
 
 bootstrap();

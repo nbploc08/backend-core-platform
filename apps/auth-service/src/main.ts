@@ -21,6 +21,11 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new HttpLoggerInterceptor());
 
-  await app.listen(process.env.PORT ?? 3000);
+
+  await app.listen(process.env.PORT ?? 8001);
+
+  console.log(
+    ` =======================-****** Auth service listening on port =======================-****** ${process.env.PORT ?? 8001}`,
+  );
 }
 bootstrap();
